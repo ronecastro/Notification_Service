@@ -229,6 +229,5 @@ class Modem:
 
 # m = Modem(debug=True)
 # m.send_to_modem(ATZ)
-
 # m.sendsms(mode='indirect', number='+5519997397443', msg='teste')
 # m.closeconnection()
