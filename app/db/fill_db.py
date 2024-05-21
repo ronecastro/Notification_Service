@@ -41,6 +41,7 @@ def update_notifications():
         print(row.keys())
 
 
+
         # cur.execute('DELETE FROM users (username, email, phone, password_hash)VALUES (?, ?, ?, ?)', (username, email, phone, password_hash))
         # conn_new.commit()
 
