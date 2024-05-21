@@ -1,6 +1,7 @@
 __pycache__
 app/__pycache__
 app/static
+app/db
 venv
 test.py
 test2.py
@@ -11,3 +12,4 @@ text.txt
 monitor_opt.py
 db/
 db_old.py
+migrations
