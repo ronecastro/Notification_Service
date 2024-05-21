@@ -1,7 +1,6 @@
 __pycache__
 app/__pycache__
 app/static
-app/db
 venv
 test.py
 test2.py
