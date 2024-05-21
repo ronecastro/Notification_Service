@@ -1,5 +1,9 @@
 import serial, time, re, psutil
+import random, string
+from copy import deepcopy
 from symbols import *
+from datetime import datetime as dt
+from datetime import timedelta as td
 
 ##############################################################
 # We need to change permission for the usb file of the modem #
@@ -32,24 +36,29 @@ class Modem:
         self.path = path
         self.debug = debug
         self.msgnumber = None
-        self.serial_connection = serial.Serial(path, baudrate=115200, timeout=5)
-        self.serial_connection.reset_input_buffer()
+        self.msg = None
+        try:
+            self.serial_connection = serial.Serial(path, baudrate=115200, timeout=5)
+            self.serial_connection.reset_input_buffer()
+        except OSError as e:
+            if e.errno == 16:
+                exit()
 
     def send_to_modem(self, msg, sleep=0.2):
         self.serial_connection.write(msg.encode())
-        # time.sleep(sleep)
+        time.sleep(sleep)
 
-    def get_answer(self, strt_sleep=0, sleep=0):
+    def get_answer(self, strt_sleep=0.1, sleep=0.1):
         time.sleep(strt_sleep)
         quantity = self.serial_connection.in_waiting
         ans = ''
         while True:
             if quantity > 0:
                 ans += self.serial_connection.read(quantity).decode()
-                # time.sleep(sleep)
+                time.sleep(sleep)
             else:
                 pass
-                # time.sleep(sleep)
+                time.sleep(sleep)
             quantity = self.serial_connection.in_waiting
             if quantity == 0:
                 break
@@ -121,7 +130,7 @@ class Modem:
             self.send_to_modem(cmd)
             ans = self.get_answer(sleep=0.2)
             if '+CMGW:' in ans:
-                pattern = '[\d]+'
+                pattern = r'[\d]+' #raw string declaration
                 if re.search(pattern, ans) is not None:
                     for catch in re.finditer(pattern, ans):
                         msgnumber = catch[0]
@@ -149,12 +158,94 @@ class Modem:
     #2 = ignore index, delete all received read and stored sent;
     #3 = ignore index, delete all received read, stored unsent and stored sent;
     #4 = ignore index, delete all stored SMS messages;
-    def clear_storage(self, index, flag=4):
+    def clear_storage(self, index=1, flag=4):
         aux = str(index) + ',' + str(flag) + '\r'
         cmd = CMGD + aux
         self.send_to_modem(cmd)
         ans = self.get_answer(sleep=1)
         return ans
+
+    def set_delivery_report(self, report=True):
+        if report:
+            cmd = CNMI + '2,1,0,1,0' # values to receive report
+            ans = self.send_command(cmd)
+            # ans = self.get_answer(sleep=0.2)
+            if ('OK' in ans) and ('nOK' not in ans):
+                cmd = CSMP + '49,167,0,0' # values to receive report
+                ans = self.send_command(cmd)
+                # ans = self.get_answer(sleep=0.2)
+            else:
+                return ans
+        else:
+            cmd = CNMI + '2,1,2,1,0' # original values
+            ans = self.send_command(cmd)
+            # ans = self.get_answer(sleep=0.2)
+            if ('OK' in ans) and ('nOK' not in ans):
+                cmd = CSMP + '0,173,0,0' # original values
+                ans = self.send_command(cmd)
+                # ans = self.get_answer(sleep=0.2)
+            else:
+                return ans
+
+    def get_delivery_report(self, phonenumber, sent, delay, exclude_sms=True):
+        time.sleep(delay)
+        cmd = CMGL + ALL
+        ans = self.send_command(cmd)
+        if ('AT+CMGL="all"' and 'OK' and not "+CMGL: " in ans):
+            return False
+        else:
+            ans = ans.split("+CMGL: ")
+            ans.remove(ans[0])
+            ans[-1] = ans[-1].split('OK')[0]
+            for elem in ans:
+                rec_number = elem.split('"",')[1].split('Torpedo SMS entregue p/ ')[1].split(' (')[0].strip()
+                sms_id = (elem.split(',"REC ')[0])
+                delivery_date = dt.strptime((elem.split('"","')[1]).split('-')[0], '%Y/%m/%d %H:%M:%S')
+                if (rec_number.strip()) in (phonenumber.strip()):
+                    if ((abs(delivery_date - sent).seconds) <= delay):
+                        if exclude_sms:
+                            cmd = CMGD + str(sms_id)
+                            ans = self.send_command(cmd)
+                            if ('OK' in ans) and ('nOK' not in ans):
+                                return True
+                            else:
+                                return False
+                        return True
+            return False
+
+    # Force delivery if Carrier denies it due Spam filter
+    def force_delivery(self):
+        is_delivered=False
+        i = 0
+        original_msg = deepcopy(self.msg)
+        msgnumber = deepcopy(self.msgnumber)
+        randomword = self.randomword(10)
+        while is_delivered != True :
+            if i == 0:
+                if len(original_msg + '\r\n' + randomword) >= 160:
+                    extra_len = len(original_msg + "\r\n" + randomword) - 160
+                    msg = deepcopy(self.msg[:(len(original_msg) - extra_len)])
+                    msg = original_msg + "\r\n" + randomword
+                else:
+                    msg = original_msg + "\r\n" + randomword
+                sent = self.sendsms(number=msgnumber, msg=msg)
+                if sent[0] == True:
+                    is_delivered = self.get_delivery_report(msgnumber, sent[1], 6)
+            else:
+                if i >= 2:
+                    break
+                randomword += self.randomword(5)
+                if len(original_msg + '\r\n' + randomword) >= 160:
+                    extra_len = len(original_msg + "\r\n" + randomword) - 160
+                    msg = deepcopy(original_msg[:(len(original_msg) - extra_len)])
+                    msg = msg + '\r\n' + randomword
+                else:
+                    msg = original_msg + '\r\n' + randomword
+                sent = self.sendsms(number=msgnumber, msg=msg)
+                if sent[0] == True:
+                    is_delivered = self.get_delivery_report(msgnumber, sent[1], 6)
+            i += 1
+        return is_delivered
 
     def kill_modem_proc(self):
         for proc in psutil.process_iter():
@@ -167,48 +258,57 @@ class Modem:
         ans = self.reset()
         if self.debug == True:
             if ('OK' in ans) and ('nOK' not in ans):
-                self.verbose_on_error()
+                ans = self.verbose_on_error()
             else:
                 return ans
         if ('OK' in ans) and ('nOK' not in ans):
-            self.set_mode(mode='text')
+            ans = self.set_mode(mode='text')
         else:
             return ans
         if ('OK' in ans) and ('nOK' not in ans):
-            self.set_storage_area(area='ME')
+            ans = self.set_storage_area(area='ME')
         else:
             return ans
         if ('OK' in ans) and ('nOK' not in ans):
-            return ans
+            ans = self.clear_storage(index=1, flag=4)
         else:
             return ans
+        if ('OK' in ans) and ('nOK' not in ans):
+            ans = self.set_delivery_report()
+        else:
+            return ans
+        return ans
 
     #Operations Group number
     def sendsms(self, mode='direct', number='+5519997397443', msg='SMS message test.', clearmemo=True):
+        self.msg = deepcopy(msg[:160])
+        self.msgnumber = number
         if mode == 'direct':
             cmd = CMGS + '"' + number + '"' + CR
             self.send_to_modem(cmd)
             ans = self.get_answer(sleep=0.2)
             if '>' in ans:
-                cmd = msg + chr(26)
-                self.send_to_modem(cmd)
+                cmd1 = self.msg
+                self.send_to_modem(cmd1)
+                cmd2 = chr(26)
+                self.send_to_modem(cmd2)
                 time.sleep(5)
                 ans = self.get_answer()
             if msg and 'OK' in ans:
-                return 'ok'
+                return 1, dt.now()
             else:
-                return 'nOk'
+                return 0, dt.now()
 
         elif mode == 'indirect':
             cmd = CMGW + '"' + number + '"' + CR
             self.send_to_modem(cmd)
             ans = self.get_answer(sleep=0.2)
             if '>' in ans:
-                cmd = msg + chr(26)
+                cmd = msg + EOMM
                 self.send_to_modem(cmd)
                 ans = self.get_answer(sleep=0.2)
                 if '+CMGW:' in ans:
-                    pattern = '[\d]+'
+                    pattern = r'[\d]+' #raw string declaration
                     if re.search(pattern, ans) is not None:
                         for catch in re.finditer(pattern, ans):
                             msgnumber = catch[0]
@@ -219,15 +319,29 @@ class Modem:
                             if ('OK' in ans) and ('nOK' not in ans):
                                 if clearmemo:
                                     self.clear_storage(msgnumber)
-                                    return ans
-                            return ans
-                return ans
-            return ans
+                                return 1, dt.now()
+            return 0, dt.now()
 
     def closeconnection(self):
         self.serial_connection.close()
 
+    def randomword(self, length):
+        letters = string.ascii_lowercase
+        return ''.join(random.choice(letters) for i in range(length))
+
+    def sendsms_force(self, mode='direct', number='+5519997397443', msg='SMS test.', clearmemo=True):
+        sent = self.sendsms(mode=mode, number=number, msg=msg, clearmemo=clearmemo)
+        if not self.get_delivery_report(number, sent[1], 10):
+            if self.force_delivery():
+                self.closeconnection()
+                return 1
+        return 0
+
 # m = Modem(debug=True)
-# m.send_to_modem(ATZ)
-# m.sendsms(mode='indirect', number='+5519997397443', msg='teste')
-# m.closeconnection()
+# m.initialize()
+# number = '+5519997397443'
+# msg = '1) SI-13C4:DI-DCCT:Current-Mon = 100.10985548\n\rLimit: L=420\n\r2) AS-Glob:AP-MachShift:Mode-Sts = 0\n\rLimit: L=69'
+# if m.sendsms_force(number=number, msg=msg):
+#     print("SMS Delivered!")
+# else:
+#     print("SMS Failed to be delivered!")

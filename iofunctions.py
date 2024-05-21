@@ -1,5 +1,6 @@
 import configparser, socket, pickle
 from os import path
+from classes import socketClient
 
 def current_path(file=None):
     try:
@@ -30,3 +31,22 @@ def write(filepath, msg):
         return 'ok'
     except Exception as e:
         return e
+
+def tcpsock_client(msg, ip='locahost', port=5007):
+    address = (ip, port)
+    client = socketClient(address)
+    sock = client.create_socket()
+    ans = client.connect(sock)
+    if ans == 'ok':
+        ans = client.send_data(sock, msg)
+    else:
+        return 'error on connecting to server', ans
+    if ans == 'ok':
+        ans = client.receive_data(sock, 1024)
+        if ans == msg:
+            ans = 'ok'
+        else:
+            client.close(sock)
+            return 'error on receiving data', ans
+    client.close(sock)
+    return ans

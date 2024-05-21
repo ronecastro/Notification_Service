@@ -21,7 +21,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
 
     def __repr__(self):
-        user_dict = {'username':self.username,'email':self.email, 'phone':self.phone}
+        user_dict = {'id':self.id,'username':self.username,'email':self.email, 'phone':self.phone, 'password_hash':self.password_hash}
         return str(user_dict)
         # return '{username} {email} {phone}'.format(**user_dict)
 
@@ -47,10 +47,15 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     notification = db.Column(db.String)
     last_sent = db.Column(db.DateTime, nullable=True)
+    sms_text = db.Column(db.String)
     user =  db.relationship("User", backref=backref('notifications', lazy='dynamic'))
 
     def __repr__(self):
-        notification_dict = {'id':self.id, 'user_id':self.user_id, 'notification':self.notification, 'last_sent':self.last_sent}
+        notification_dict = {'id':self.id,
+                             'user_id':self.user_id,
+                             'notification':self.notification,
+                             'sms_text':self.sms_text,
+                             'last_sent':self.last_sent}
         return str(notification_dict)
         # return '<{}>'.format(self.notification)
 
@@ -61,6 +66,8 @@ class Notification(db.Model):
             return self.user_id
         if key == 'notification':
             return self.notification
+        if key == 'sms_text':
+            return self.sms_text
         if key == 'last_sent':
             return self.last_sent
         if key == 'user':
@@ -73,7 +80,7 @@ class Rule(db.Model):
     description = db.Column(db.String)
 
     def __repr__(self):
-        return '<Rule {}>'.format(self.rule)
+        return 'id: {} / rule: {}'.format(self.id, self.rule)
 
     def __getitem__(self, key):
         if key == 'id':

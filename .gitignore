@@ -1,5 +1,13 @@
 __pycache__
 app/__pycache__
+app/static
 venv
 test.py
 test2.py
+test3.py
+test.txt
+annotations.rd
+text.txt
+monitor_opt.py
+db/
+db_old.py
