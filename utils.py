@@ -1,19 +1,18 @@
 #!./venv/bin/python
 """Useful functions."""
 
-from db import App_db, FullPVList
 from epics import PV, cainfo
 from classes import NotificationInfoByPV
 import symbols, json, re
 
 
 
-def makepvlist(fullpvlist):
+def makepvlist(fullpvlist, app_notifications):
     """Returns a lisf of string PV names, without duplicates."""
     pvlist = []
     # f = FullPVList()
     # fullpvlist = f.getlist()
-    notifications_db = App_db(symbols.Notifications)
+    notifications_db = app_notifications #App_db(symbols.Notifications)
     # notifications_raw = notifications_db.get()
     notifications_raw = symbols.notifications_raw
     for item in notifications_raw:
@@ -36,10 +35,10 @@ def makepvlist(fullpvlist):
     return pvlist
 
 
-def makepvpool(fullpvlist):
+def makepvpool(fullpvlist, app_notifications):
     """Returns a lisf of NotoficationInfoByPV classes."""
     pvpool = []
-    notifications_db = App_db(symbols.Notifications)
+    notifications_db = app_notifications #App_db(symbols.Notifications)
     notifications_raw = symbols.notifications_raw
     j = 0
     for item in notifications_raw:
@@ -112,7 +111,7 @@ def test_notification(n, pvlist_dict, fullpvlist):
     notification = n[symbols.notification]
     notification_json = json.loads(notification)
     nc = notification_json[symbols.notificationCores]
-    test_results = {"send_sms" : False, "faulty" : None}
+    test_results = {"send_sms":False, "faulty":None, "pvs":{}, "nc":None}
     L, LL, LU = None, None, None
     complete_rule = []
     faulty = []
@@ -143,7 +142,7 @@ def test_notification(n, pvlist_dict, fullpvlist):
                     rule4eval = re.sub("LU", str(LU), rule4eval)
                     eval_partial = eval(rule4eval)
                     if eval_partial:
-                        true_pvs.append(pvname)
+                        true_pvs.append(pvname + "(" + str(pv) + ")")
                     rule_array.append(str(eval_partial))
                 else:
                     faulty.append(pvname)
@@ -156,7 +155,8 @@ def test_notification(n, pvlist_dict, fullpvlist):
 
         complete_rule.append(str(partial_rule))
         complete_rule.append(subrule.lower()) if subrule != '' else None
-        test_results.update({(pv_in_notification + "(" + core_number + ")") : true_pvs})
+        test_results["pvs"].update({
+            (pv_in_notification + "(" + core_number + ")") : true_pvs})
         if subrule != '':
             test_results.update({(symbols.subrule + core_number) : subrule})
     if eval(" ".join(complete_rule)):
@@ -165,3 +165,15 @@ def test_notification(n, pvlist_dict, fullpvlist):
     test_results.update({"faulty" : faulty})
 
     return test_results
+
+def sms_formatter(sms_text, test_results=None, n=None):
+    print(n)
+    if sms_text:
+        r = sms_text.replace("{L}", "a")
+        return ('sms_text')
+    else:
+        return "No SMS Text"
+
+# test_result = "{'send_sms': True, 'faulty': [], 'TS-04:PU-InjSeptG-1:Voltage-Mon(0)': ['TS-04:PU-InjSeptG-1:Voltage-Mon(407.7669430097902)'], 'subrule0': 'OR', 'TS-04:PU-InjSeptG-2:Voltage-Mon(1)': ['TS-04:PU-InjSeptG-2:Voltage-Mon(405.91594983988387)']}"
+# sms_text = ""
+# sms_formatter(sms_text, test_result)

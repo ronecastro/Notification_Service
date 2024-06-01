@@ -1,6 +1,6 @@
 #!./venv/bin/python
 from db import App_db, FullPVList
-from utils import makepvlist, connect_pvs, test_notification
+from utils import makepvlist, connect_pvs, test_notification, sms_formatter
 from epics import PV
 from time import sleep
 from symbols import *
@@ -19,7 +19,8 @@ def evaluate():
     while k == 0: #True:
         try:
             k = 1
-            allpvs = makepvlist(fullpvlist)
+            app_notifications = App_db(Notifications)
+            allpvs = makepvlist(fullpvlist, app_notifications)
             # f = open('test.txt')
             # allpvs = f.read()
 
@@ -82,16 +83,20 @@ def evaluate():
                 if can_send:
                     # test conditions inside notification (rules)
                     ans = test_notification(n, pvlist_dict, fullpvlist)
+                    print(ans)
                     if ans["send_sms"]:
                         user_id = n["user_id"]
                         user = users_db.get(field=id, value=user_id)
-                        sms_text = "teste" #n["sms_text"]
+                        sms_text = n["sms_text"]
+                        sms_text = ""
+                        print(sms_formatter(sms_text, test_results=ans, n=n))
                         # r = m.sendsms_force(number=user.phone, msg=sms_text)[0]
                         r = 'ok'
                         if r == 'ok':
                             # update notification last_sent key
                             # notifications_db.update(n[id], last_sent, now)
-                            print(notifications_db.get())
+                            # print(notifications_db.get())
+                            pass
 
         except KeyboardInterrupt:
             break

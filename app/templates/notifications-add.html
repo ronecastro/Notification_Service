@@ -12,12 +12,13 @@
 <div class="container-fluid" style="padding-left:0px;padding-right:0px;">
     <div class="row">
         <div class="col-sm-1.5">
-            <label class="col-sm-12 col-form-label">Expiraton date:</label>
+            <label class="col-sm-12 col-form-label">Expiration date:</label>
         </div>
         <div class="col-sm-2">
             <input type="text" class="form-control datetimepicker-input" id="datetimepicker5"
                 data-toggle="datetimepicker" data-target="#datetimepicker5">
         </div>
+
         <script type="text/javascript">
             $(function () {
                 $('#datetimepicker5').datetimepicker();
@@ -40,22 +41,7 @@
                 clear: "fa fa-trash" }
             });
         </script>
-        <!-- <script>
-            $(function() {
-                $("[id^=pv]").autocomplete({
-                    source:function(request, response) {
-                        $.getJSON("{{url_for('autocomplete')}}",{
-                            q: request.term, // in flask, "q" will be the argument to look for using request.args
-                        },
-                        function(data) {
-                            response(data.matching_results.slice(0,500)); // matching_results from jsonify
-                        });
-                    },
-                    minLength: 2,
-                    delay:100,
-                });
-            })
-        </script> -->
+
         <script>
             $(function(){
                 $(document).on('click', "[id^='pv']", function(e){
@@ -73,13 +59,7 @@
                 });
             });
         </script>
-        <!-- <script>
-            $(function() {
-                $(document).on('focusin', this, function() {
 
-                });
-            })
-        </script> -->
         <div class="col-sm-1.5">
             <label class="col-sm-12 col-form-label">Interval(minutes):</label>
         </div>
@@ -89,12 +69,33 @@
         <div class="col-sm-1.5">
             <label class="col-sm-12 col-form-label">Persistence:</label>
         </div>
-        <div class="col-sm-1">
+        <div class="col-sm-0.5">
             <select class="form-control" id="persistence">
                 <option value="YES">YES</option>
                 <option value="NO" selected='selected'>NO</option>
             </select>
         </div>
+        <div style="width:20px;"></div>
+
+
+        <div class="col-sm-0.5">
+            <label class="col-sm-12 col-form-label">SMS Text:</label>
+        </div>
+        <div class="col-sm-4">
+            <input type="text" class="form-control" id="sms_text" maxlength="160">
+        </div>
+        <span class="pull-right label label-default" id="count_message" style="line-height: 40px;">
+        </span>
+
+    <script>
+        var text_max = 160;
+        $('#count_message').html('0 / ' + text_max );
+        $('#sms_text').keyup(function() {
+            var text_length = $('#sms_text').val().length;
+            var text_remaining = text_max - text_length;
+            $('#count_message').html(text_length + ' / ' + text_max);
+            });
+    </script>
 
     </div>
     <p>

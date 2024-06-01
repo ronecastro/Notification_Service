@@ -10,6 +10,7 @@ from datetime import datetime
 import json, re
 from dbfunctions import searchdb
 from utils import get_enum_list
+from copy import deepcopy
 
 #primary light blue
 #secondary light grey
@@ -94,7 +95,7 @@ def login():
         except Exception as e:
             pass
         login_user(user, remember=form.remember_me.data)
-        session['last_url'] = '/sms_service/index'
+        session['last_url'] = '/ns/index'
         flash('Login successfull!', 'success')
         return redirect(url_for('index'))
     return render_template('login.html', title='Sign In', form=form)
@@ -228,11 +229,12 @@ def notifications_add():
     if request.method == "POST":
         action = request.form
         requestJson = json.dumps(request.get_json(force=True))
+        # print(requestJson)
         requestJson_load = json.loads(requestJson)
-        # print(requestJson_load)
         expiration = requestJson_load['expiration']
         interval = requestJson_load['interval']
         nc = requestJson_load['notificationCores']
+        sms_text = requestJson_load['sms_text']
         limit = '0'
         limitLL = '0'
         limitLU = '0'
@@ -342,12 +344,18 @@ def notifications_add():
             # print(limitLL)
             # print(limitLU)
             # print(index)
+        print(sms_text)
+        if len(sms_text) >= 160:
+            if 'sms_text' not in errors:
+                errors.append('sms_text')
+                emsg += 'SMS Text needs to have a maximum of 160 characters! '
         if len(errors) == 0:
             user_db = db.session.query(User).filter_by(username=user.username).first()
             user_id = user_db.id
             notification = Notification(
                 user_id = user_id,
-                notification=requestJson)
+                notification = requestJson,
+                sms_text = sms_text)
             db.session.add(notification)
             db.session.commit()
             flash('Notification added!', 'success')
@@ -369,9 +377,10 @@ def notifications_edit(id):
         action = request.form
         requestJson = json.dumps(request.get_json(force=True))
         requestJson_load = json.loads(requestJson)
-        # print(requestJson_load)
         expiration = requestJson_load['expiration']
         interval = requestJson_load['interval']
+        sms_text = deepcopy(requestJson_load['sms_text'])
+        requestJson_load.pop('sms_text', None)
         nc = requestJson_load['notificationCores']
         limit = '0'
         limitLL = '0'
@@ -484,7 +493,8 @@ def notifications_edit(id):
             # print(index)
         if len(errors) == 0:
             notification = db.session.query(Notification).filter_by(id=id).first()
-            notification.notification = requestJson
+            notification.notification = json.dumps(requestJson_load)
+            notification.sms_text = sms_text
             db.session.commit()
             flash("Notification edited sucessfully!", "success")
             return url_for('notifications')
@@ -496,6 +506,7 @@ def notifications_edit(id):
     notification = db.session.query(Notification).filter_by(id=id).all()
     session['last_url'] = url_for('notifications_edit', id=id)
     session['login_required'] = True
+    print(notification)
     return render_template('notifications-edit.html', id=id, rules=rules, \
         notification=notification, title='Edit Notification')
 

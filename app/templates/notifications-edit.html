@@ -12,6 +12,10 @@
     window.onload = function(){
         var n = toJson('{{notification[0].notification}}');
         JsonToForm(n);
+
+        var len_on_load = $('#sms_text').val().length;
+        $('#count_message').html(len_on_load + ' / 160');
+
         //notification = n['notificationCores'][0]['notificationCore0'];
         select = document.getElementById("rule");
         limit = document.getElementById("limit");
@@ -113,7 +117,6 @@
     }
 </script>
 
-
 <div class="container-fluid" style="padding-left:0px;padding-right:0px;overflow:visible;">
     <div class="row">
         <div class="col-sm-1.5">
@@ -124,6 +127,7 @@
                 data-toggle="datetimepicker" data-target="#datetimepicker5" autocomplete="off"
                 name="expiration" value="{{ request.form['expiration'] or '' }}">
         </div>
+
         <script type="text/javascript">
             $(function () {
                 $('#datetimepicker5').datetimepicker();
@@ -146,6 +150,7 @@
                 clear: "fa fa-trash" }
             });
         </script>
+
         <script>
             $(function(){
                 $(document).on('click', "[id^='pv']", function(e){
@@ -163,6 +168,7 @@
                 });
             });
         </script>
+
         <div class="col-sm-1.5">
             <label class="col-sm-12 col-form-label">Interval(minutes):</label>
         </div>
@@ -172,12 +178,31 @@
         <div class="col-sm-1.5">
             <label class="col-sm-12 col-form-label">Persistence:</label>
         </div>
-        <div class="col-sm-1">
+        <div class="col-sm-0.5">
             <select class="form-control" id="persistence" autocomplete="off" name="persistence">
                 <option value="YES">YES</option>
                 <option value="NO" selected='selected'>NO</option>
             </select>
         </div>
+        <div style="width:20px;"></div>
+        <div class="col-sm-0.5">
+            <label class="col-sm-12 col-form-label">SMS Text:</label>
+        </div>
+        <div class="col-sm-4">
+            <input type="text" class="form-control" id="sms_text" name='sms_text' value='{{notification[0].sms_text}}' maxlength="160">
+        </div>
+        <span class="pull-right label label-default" id="count_message" style="line-height: 40px;">
+        </span>
+
+    <script>
+        var text_max = 160;
+        $('#sms_text').keyup(function() {
+            var text_length = $('#sms_text').val().length;
+            var text_remaining = text_max - text_length;
+            $('#count_message').html(text_length + ' / ' + text_max);
+            console.log(text_length)
+            });
+    </script>
 
     </div>
     <p>

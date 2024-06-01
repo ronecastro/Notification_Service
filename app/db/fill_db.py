@@ -26,7 +26,7 @@ database_path_new = os.path.join(current_folder, new_db_name)
 print(database_path_new)
 conn_new = sqlite3.connect(database_path_new)
 conn_new.row_factory = sqlite3.Row
-cur = conn_new.cursor()
+cur_new = conn_new.cursor()
 rows_new = conn_new.execute("SELECT * FROM notifications").fetchall()
 
 def update_notifications():
@@ -40,9 +40,9 @@ def update_notifications():
         notification_new = notification_new.replace('"subrule":', '"subrule0":')
         print(row.keys())
 
+        # cur_new.execute('UPDATE notifications SET notification()')
 
-
-        # cur.execute('DELETE FROM users (username, email, phone, password_hash)VALUES (?, ?, ?, ?)', (username, email, phone, password_hash))
+        # cur_new.execute('DELETE FROM users (username, email, phone, password_hash)VALUES (?, ?, ?, ?)', (username, email, phone, password_hash))
         # conn_new.commit()
 
 
