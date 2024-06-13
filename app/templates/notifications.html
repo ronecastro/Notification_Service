@@ -37,6 +37,7 @@
             '{%endif%}'
             var n = '{{notification.notification}}';
             obj = toJson(n);
+            console.log(obj)
             // console.log(obj)
             nCores = obj.notificationCores;
             var len = obj.notificationCores.length;
@@ -52,22 +53,22 @@
                 id.innerHTML = '{{notification.id}}';
                 // console.log(obj)
                 expiration.innerHTML = obj.expiration;
-                pv.innerHTML = obj.notificationCores[0].notificationCore0.pv;
-                rule.innerHTML = obj.notificationCores[0].notificationCore0.rule;
+                pv.innerHTML = obj.notificationCores[0].notificationCore0.pv0;
+                rule.innerHTML = obj.notificationCores[0].notificationCore0.rule0;
                 // console.log('notificationCores', obj.notificationCores[0]);
                 // console.log('rule', rule)
                 // console.log('obj', obj.notificationCores[0].notificationCore0.rule)
                 // limit.innerHTML = obj.notificationCores[0].notificationCore0.limit
-                rule_ = obj.notificationCores[0].notificationCore0.rule;
+                rule_ = obj.notificationCores[0].notificationCore0.rule0;
                 if (rule_.includes('LL')){
-                    limit.innerHTML = 'LL = ' + obj.notificationCores[0].notificationCore0['limitLL'] + ' // ' +
-                        'LU = ' + obj.notificationCores[0].notificationCore0['limitLU'] + '<br/>';
+                    limit.innerHTML = 'LL = ' + obj.notificationCores[0].notificationCore0['limitLL0'] + ' // ' +
+                        'LU = ' + obj.notificationCores[0].notificationCore0['limitLU0'] + '<br/>';
                     }
                 else{
-                    limit.innerHTML = 'L = ' + obj.notificationCores[0].notificationCore0.limit;
+                    limit.innerHTML = 'L = ' + obj.notificationCores[0].notificationCore0.limit0;
                     }
                 // console.log(rule_)
-                subrule.innerHTML = obj.notificationCores[0].notificationCore0.subrule;
+                subrule.innerHTML = obj.notificationCores[0].notificationCore0.subrule0;
                 interval.innerHTML = obj.interval;
                 persistence.innerHTML = obj.persistence;
                 // console.log('limit', limit)
@@ -77,17 +78,17 @@
                 expiration.innerHTML = obj.expiration;
                 pv.innerHTML = obj.notificationCores[0].notificationCore0.pv;
                 // console.log('notificationCores', obj.notificationCores[0]);
-                rule.innerHTML = obj.notificationCores[0].notificationCore0.rule
-                rule_ = obj.notificationCores[0].notificationCore0.rule;
+                rule.innerHTML = obj.notificationCores[0].notificationCore0.rule0
+                rule_ = obj.notificationCores[0].notificationCore0.rule0;
                 limit.innerHTML = "test"
                 if (rule_.includes('LL')){
                     limit.innerHTML = 'LL = ' + obj.notificationCores[0].notificationCore0['limitLL'] + ' // ' +
                         'LU = ' + obj.notificationCores[0].notificationCore0['limitLU'] + '<br/>';
                     }
                 else{
-                    limit.innerHTML = 'L = ' + obj.notificationCores[0].notificationCore0.limit;
+                    limit.innerHTML = 'L = ' + obj.notificationCores[0].notificationCore0.limit0;
                     }
-                subrule.innerHTML = obj.notificationCores[0].notificationCore0.subrule;
+                subrule.innerHTML = obj.notificationCores[0].notificationCore0.subrule0;
                 interval.innerHTML = obj.interval;
                 persistence.innerHTML = obj.persistence;
                 '{%endif%}'
@@ -121,12 +122,12 @@
                     }
                     nC = 'notificationCore' + j;
                     if(j == 0){
-                        nP = 'pv';
-                        nR = 'rule';
-                        nLimit = 'limit';
-                        nLimitLL = 'limitLL';
-                        nLimitLU = 'limitLU';
-                        nSubrule = 'subrule';
+                        nP = 'pv0';
+                        nR = 'rule0';
+                        nLimit = 'limit0';
+                        nLimitLL = 'limitLL0';
+                        nLimitLU = 'limitLU0';
+                        nSubrule = 'subrule0';
                     }
                     else{
                         nP = 'pv' + j;
@@ -234,7 +235,7 @@
     </br>
     <script type="text/javascript">
         var tableToJson = $('#dataTable').tableToJSON();
-        var sendingData = JSON.stringify (tableToJson);
+        var sendingData = JSON.stringify(tableToJson);
         //console.log(tableToJson)
     </script>
 {% endblock %}

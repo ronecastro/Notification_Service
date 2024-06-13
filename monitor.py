@@ -19,10 +19,8 @@ def evaluate():
     while k == 0: #True:
         try:
             k = 1
-            app_notifications = App_db(Notifications)
+            app_notifications = App_db("notifications")
             allpvs = makepvlist(fullpvlist, app_notifications)
-            # f = open('test.txt')
-            # allpvs = f.read()
 
             pvlist = connect_pvs(allpvs)
             pvlist_dict = {}
@@ -84,13 +82,15 @@ def evaluate():
                     # test conditions inside notification (rules)
                     ans = test_notification(n, pvlist_dict, fullpvlist)
                     print(ans)
+                    print(" ")
                     if ans["send_sms"]:
                         user_id = n["user_id"]
                         user = users_db.get(field=id, value=user_id)
                         sms_text = n["sms_text"]
                         sms_text = ""
-                        print(sms_formatter(sms_text, test_results=ans, n=n))
-                        # r = m.sendsms_force(number=user.phone, msg=sms_text)[0]
+                        text2send = sms_formatter(sms_text, ndata=ans)
+                        print(text2send)
+                        # r = m.sendsms_force(number=user.phone, msg=text2send)[0]
                         r = 'ok'
                         if r == 'ok':
                             # update notification last_sent key

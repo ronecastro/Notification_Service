@@ -7,18 +7,29 @@ import symbols, json, re
 
 
 
+def row2dict(row):
+    d = {}
+    for column in row.__table__.columns:
+        d[column.name] = str(getattr(row, column.name))
+    return d
+
+
 def makepvlist(fullpvlist, app_notifications):
     """Returns a lisf of string PV names, without duplicates."""
     pvlist = []
     # f = FullPVList()
     # fullpvlist = f.getlist()
     notifications_db = app_notifications #App_db(symbols.Notifications)
-    # notifications_raw = notifications_db.get()
-    notifications_raw = symbols.notifications_raw
+    notifications_raw = notifications_db.get()
+    # notifications_raw = symbols.notifications_raw
     for item in notifications_raw:
+        item = row2dict(item)
         i = 0
-        n = str(item.get(symbols.notification))
-        notification = json.loads(n)
+        print(type(item), item)
+        print(" ")
+        n = json.loads(json.dumps(item))
+        print(type(n), n)
+        notification = json.loads(n[symbols.notification])
         for key in notification[symbols.notificationCores]:
             nC = symbols.notificationCore + str(i)
             comp_regex = re.compile(symbols.BGNCHAR + key[nC][symbols.pv + str(i)] + symbols.ENDCHAR)
@@ -111,13 +122,13 @@ def test_notification(n, pvlist_dict, fullpvlist):
     notification = n[symbols.notification]
     notification_json = json.loads(notification)
     nc = notification_json[symbols.notificationCores]
-    test_results = {"send_sms":False, "faulty":None, "pvs":{}, "nc":None}
+    test_results = {"send_sms":False, "sizetrue": 0, "faulty":None, "pvs":{}}
     L, LL, LU = None, None, None
     complete_rule = []
     faulty = []
     for core in nc:
         rule_array = []
-        true_pvs = []
+        true_pvs = {}
         partial_rule = ""
         core_number = list(core.keys())[0][-1]
         core_inner = core[symbols.notificationCore + core_number]
@@ -132,21 +143,29 @@ def test_notification(n, pvlist_dict, fullpvlist):
             LL = core_inner[symbols.limitLL + core_number]
         if (symbols.limitLU + core_number) in core_inner.keys():
             LU = core_inner[symbols.limitLU + core_number]
+        i = 0
         for pvname in pvnames:
             try:
                 if pvlist_dict[pvname].connected:
-                    pv = str(pvlist_dict[pvname].value)
+                    pv = str(round(pvlist_dict[pvname].value, 3))
                     rule4eval = re.sub("pv", pv, rule)
                     rule4eval = re.sub("L$", str(L), rule4eval)
                     rule4eval = re.sub("LL", str(LL), rule4eval)
                     rule4eval = re.sub("LU", str(LU), rule4eval)
                     eval_partial = eval(rule4eval)
                     if eval_partial:
-                        true_pvs.append(pvname + "(" + str(pv) + ")")
+                        true_pvs.update({"pv" : pvname})
+                        true_pvs.update({"value" : pv})
+                        true_pvs.update({"rule" : rule})
+                        true_pvs.update({"limit" : L})
+                        true_pvs.update({"limitLL" : LL})
+                        true_pvs.update({"limitLU" : LU})
+                        test_results["sizetrue"] += 1
                     rule_array.append(str(eval_partial))
                 else:
                     faulty.append(pvname)
             except Exception as e:
+                print('error: ', e)
                 faulty.append(pvname)
                 rule_array.append(str(False))
 
@@ -159,6 +178,7 @@ def test_notification(n, pvlist_dict, fullpvlist):
             (pv_in_notification + "(" + core_number + ")") : true_pvs})
         if subrule != '':
             test_results.update({(symbols.subrule + core_number) : subrule})
+        L, LL, LU = None, None, None
     if eval(" ".join(complete_rule)):
         test_results.update({"send_sms" : True})
 
@@ -166,13 +186,22 @@ def test_notification(n, pvlist_dict, fullpvlist):
 
     return test_results
 
-def sms_formatter(sms_text, test_results=None, n=None):
-    print(n)
+def sms_formatter(sms_text, ndata=None):
     if sms_text:
-        r = sms_text.replace("{L}", "a")
-        return ('sms_text')
+        return sms_text
     else:
-        return "No SMS Text"
+        msg = "WARNING\r\n"
+        msg += str(ndata["sizetrue"]) + " PV(s) in problem!\r\n"
+        for key in ndata["pvs"]:
+            pv = ndata["pvs"][key]
+            msg += pv + " = " + ndata["pvs"][key]["value"] + "\r\n"
+            msg +="Rule: " + ndata["pvs"][key]["rule"] + "\r\n"
+            if ndata["pvs"][key]["limit"]:
+                msg += "Limit: " + ndata["pvs"][key]["limit"] + "\r\n"
+            else:
+                msg += "LL: " + ndata["pvs"][key]["limitLL"] + "\r\n"
+                msg += "LU: " + ndata["pvs"][key]["limitLL"] + "\r\n"
+        return msg
 
 # test_result = "{'send_sms': True, 'faulty': [], 'TS-04:PU-InjSeptG-1:Voltage-Mon(0)': ['TS-04:PU-InjSeptG-1:Voltage-Mon(407.7669430097902)'], 'subrule0': 'OR', 'TS-04:PU-InjSeptG-2:Voltage-Mon(1)': ['TS-04:PU-InjSeptG-2:Voltage-Mon(405.91594983988387)']}"
 # sms_text = ""

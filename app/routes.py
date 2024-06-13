@@ -229,7 +229,7 @@ def notifications_add():
     if request.method == "POST":
         action = request.form
         requestJson = json.dumps(request.get_json(force=True))
-        # print(requestJson)
+        print("requestJson", requestJson)
         requestJson_load = json.loads(requestJson)
         expiration = requestJson_load['expiration']
         interval = requestJson_load['interval']
@@ -238,18 +238,22 @@ def notifications_add():
         limit = '0'
         limitLL = '0'
         limitLU = '0'
+        found = False
         for index in range(len(nc)):
             keys = requestJson_load['notificationCores'][index]['notificationCore'+str(index)].items()
             # print(dict(keys))
             if index == 0:
-                pv = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['pv']
-                rule = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['rule']
-                if 'limitLL' in dict(keys):
-                    limitLL = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limitLL']
-                if 'limitLU' in dict(keys):
-                    limitLU = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limitLU']
+                pv = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['pv0']
+                rule = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['rule0']
+                for element in list(dict(keys).keys()):
+                    if 'limitLL' in element:
+                        found = True
+                        break
+                if found:
+                    limitLL = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limitLL0']
+                    limitLU = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limitLU0']
                 else:
-                    limit = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limit']
+                    limit = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limit0']
             else:
                 pv = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['pv'+str(index)]
                 rule = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['rule'+str(index)]
@@ -294,11 +298,6 @@ def notifications_add():
                     errors.append('limit')
                 if 'Limit must be numeric!' not in emsg:
                     emsg += 'Limit must be numeric! '
-            # if not limit.isnumeric() and limit:
-            #     if 'limit' not in errors:
-            #         errors.append('limit')
-            #     if 'Limit must be numeric!' not in emsg:
-            #         emsg += 'Limit must be numeric! '
             if not limit:
                 if 'limit' not in errors:
                     errors.append('limit')
@@ -312,11 +311,6 @@ def notifications_add():
                     errors.append('limitLL')
                 if 'Limit LL must be numeric!' not in emsg:
                     emsg += 'Limit LL must be numeric! '
-            # if not limitLL.isnumeric() and limitLL:
-            #     if 'limitLL' not in errors:
-            #         errors.append('limitLL')
-            #     if 'Limit LL must be numeric!' not in emsg:
-            #         emsg += 'Limit LL must be numeric! '
             if not limitLL:
                 if 'limitLL' not in errors:
                     errors.append('limitLL')
@@ -330,21 +324,11 @@ def notifications_add():
                     errors.append('limitLU')
                 if 'Limit LU must be numeric!' not in emsg:
                     emsg += 'Limit LU must be numeric! '
-            # if not limitLU.isnumeric() and limitLU:
-            #     if 'limitLU' not in errors:
-            #         errors.append('limitLU')
-            #     if 'Limit LU must be numeric!' not in emsg:
-            #         emsg += 'Limit LU must be numeric! '
             if not limitLU:
                 if 'limitLU' not in errors:
                     errors.append('limitLU')
                 if 'Set Limit LU of' not in emsg:
                     emsg += 'Set Limit LU of' + pv + '! '
-            # print(type(limit))
-            # print(limitLL)
-            # print(limitLU)
-            # print(index)
-        print(sms_text)
         if len(sms_text) >= 160:
             if 'sms_text' not in errors:
                 errors.append('sms_text')
@@ -385,18 +369,22 @@ def notifications_edit(id):
         limit = '0'
         limitLL = '0'
         limitLU = '0'
+        found = False
         for index in range(len(nc)):
             keys = requestJson_load['notificationCores'][index]['notificationCore'+str(index)].items()
             # print(dict(keys))
             if index == 0:
-                pv = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['pv']
-                rule = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['rule']
-                if 'limitLL' in dict(keys):
-                    limitLL = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limitLL']
-                if 'limitLU' in dict(keys):
-                    limitLU = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limitLU']
+                pv = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['pv0']
+                rule = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['rule0']
+                for element in list(dict(keys).keys()):
+                    if 'limitLL' in element:
+                        found = True
+                        break
+                if found:
+                    limitLL = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limitLL0']
+                    limitLU = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limitLU0']
                 else:
-                    limit = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limit']
+                    limit = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['limit0']
             else:
                 pv = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['pv'+str(index)]
                 rule = requestJson_load['notificationCores'][index]['notificationCore'+str(index)]['rule'+str(index)]
@@ -441,11 +429,6 @@ def notifications_edit(id):
                     errors.append('limit')
                 if 'Limit must be numeric!' not in emsg:
                     emsg += 'Limit must be numeric! '
-            # if not limit.isnumeric() and limit:
-            #     if 'limit' not in errors:
-            #         errors.append('limit')
-            #     if 'Limit must be numeric!' not in emsg:
-            #         emsg += 'Limit must be numeric! '
             if not limit:
                 if 'limit' not in errors:
                     errors.append('limit')
@@ -459,11 +442,6 @@ def notifications_edit(id):
                     errors.append('limitLL')
                 if 'Limit LL must be numeric!' not in emsg:
                     emsg += 'Limit LL must be numeric! '
-            # if not limitLL.isnumeric() and limitLL:
-            #     if 'limitLL' not in errors:
-            #         errors.append('limitLL')
-            #     if 'Limit LL must be numeric!' not in emsg:
-            #         emsg += 'Limit LL must be numeric! '
             if not limitLL:
                 if 'limitLL' not in errors:
                     errors.append('limitLL')
@@ -477,20 +455,11 @@ def notifications_edit(id):
                     errors.append('limitLU')
                 if 'Limit LU must be numeric!' not in emsg:
                     emsg += 'Limit LU must be numeric! '
-            # if not limitLU.isnumeric() and limitLU:
-            #     if 'limitLU' not in errors:
-            #         errors.append('limitLU')
-            #     if 'Limit LU must be numeric!' not in emsg:
-            #         emsg += 'Limit LU must be numeric! '
             if not limitLU:
                 if 'limitLU' not in errors:
                     errors.append('limitLU')
                 if 'Set Limit LU of' not in emsg:
                     emsg += 'Set Limit LU of' + pv + '! '
-            # print(type(limit))
-            # print(limitLL)
-            # print(limitLU)
-            # print(index)
         if len(errors) == 0:
             notification = db.session.query(Notification).filter_by(id=id).first()
             notification.notification = json.dumps(requestJson_load)

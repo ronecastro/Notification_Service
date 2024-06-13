@@ -4,10 +4,7 @@ import sqlite3, iofunctions, requests, urllib3
 from os import path
 from app.models import User, Notification, Rule
 from app import db
-from flask import jsonify
-from datetime import datetime
-from symbols import users, notifications, rules, id, username, email, phone, sms_text, last_sent
-from sqlalchemy import insert
+from symbols import users, notifications, rules, id, username, email, phone, last_sent
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
