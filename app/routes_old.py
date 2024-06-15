@@ -27,6 +27,7 @@ def autocomplete():
 @app.route('/gethint', methods=['GET'])
 def gethint():
     if request.method == 'GET':
+        print("request.args", request.args)
         pv = request.args['pv']
         if pv:
             hint = get_enum_list(pv)

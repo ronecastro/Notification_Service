@@ -331,7 +331,7 @@ class Modem:
 
     def sendsms_force(self, mode='direct', number='+5519997397443', msg='SMS test.', clearmemo=True):
         sent = self.sendsms(mode=mode, number=number, msg=msg, clearmemo=clearmemo)
-        if not self.get_delivery_report(number, sent[1], 10):
+        if not self.get_delivery_report(phonenumber=number, sent=sent[1], delay=10):
             if self.force_delivery():
                 self.closeconnection()
                 return 1
@@ -341,6 +341,7 @@ class Modem:
 # m.initialize()
 # number = '+5519997397443'
 # msg = '1) SI-13C4:DI-DCCT:Current-Mon = 100.10985548\n\rLimit: L=420\n\r2) AS-Glob:AP-MachShift:Mode-Sts = 0\n\rLimit: L=69'
+# msg = 'test'
 # if m.sendsms_force(number=number, msg=msg):
 #     print("SMS Delivered!")
 # else:

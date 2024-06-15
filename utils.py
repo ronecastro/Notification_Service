@@ -17,31 +17,19 @@ def row2dict(row):
 def makepvlist(fullpvlist, app_notifications):
     """Returns a lisf of string PV names, without duplicates."""
     pvlist = []
-    # f = FullPVList()
-    # fullpvlist = f.getlist()
-    notifications_db = app_notifications #App_db(symbols.Notifications)
-    notifications_raw = notifications_db.get()
-    # notifications_raw = symbols.notifications_raw
+    notifications_raw = app_notifications.get()
     for item in notifications_raw:
         item = row2dict(item)
         i = 0
-        print(type(item), item)
-        print(" ")
         n = json.loads(json.dumps(item))
-        print(type(n), n)
         notification = json.loads(n[symbols.notification])
         for key in notification[symbols.notificationCores]:
             nC = symbols.notificationCore + str(i)
             comp_regex = re.compile(symbols.BGNCHAR + key[nC][symbols.pv + str(i)] + symbols.ENDCHAR)
             filterlist = list(filter(comp_regex.match, fullpvlist))
-            # print('filterlist', filterlist)
             for pv in filterlist:
                 if pv not in pvlist:
                     pvlist.append(pv)
-                    # lista com 10 elementos, para testes
-                    # eliminar na versão final
-                    # if len(pvlist) == 10:
-                    #     return pvlist
             i += 1
     return pvlist
 
@@ -91,15 +79,15 @@ def connect_pvs(pvlist):
 def get_enum_list(pv):
     ans3 = ''
     try:
-        ans = cainfo(pv, print_out=False, timeout=2)
+        ans = cainfo(str(pv), print_out=True)
         if ans != '' and ans != None and 'enum strings:' in ans:
             ans2 = (ans.split('enum strings:')[-1])
             ans3 = ans2.split('\n')[1:-2]
         else:
             return
     except Exception as e:
-        #print('e', e)
-        return
+        # print('e', e)
+        return 'PV data not available'
     aux = []
     if ans3 != '' and ans3 is not None:
         for element in ans3:
@@ -160,6 +148,7 @@ def test_notification(n, pvlist_dict, fullpvlist):
                         true_pvs.update({"limit" : L})
                         true_pvs.update({"limitLL" : LL})
                         true_pvs.update({"limitLU" : LU})
+                        true_pvs.update({"subrule" : subrule})
                         test_results["sizetrue"] += 1
                     rule_array.append(str(eval_partial))
                 else:
@@ -190,17 +179,21 @@ def sms_formatter(sms_text, ndata=None):
     if sms_text:
         return sms_text
     else:
-        msg = "WARNING\r\n"
-        msg += str(ndata["sizetrue"]) + " PV(s) in problem!\r\n"
+        msg = "WARNING!\r\n"
         for key in ndata["pvs"]:
-            pv = ndata["pvs"][key]
-            msg += pv + " = " + ndata["pvs"][key]["value"] + "\r\n"
-            msg +="Rule: " + ndata["pvs"][key]["rule"] + "\r\n"
+            pvname = ndata["pvs"][key]["pv"]
+            pvvalue = ndata["pvs"][key]["value"]
+            rule = ndata["pvs"][key]["rule"]
+            subrule = ndata["pvs"][key]["subrule"]
+            msg += pvname + " = " + pvvalue + "\r\n"
+            msg +="Rule: " + rule + "\r\n"
             if ndata["pvs"][key]["limit"]:
                 msg += "Limit: " + ndata["pvs"][key]["limit"] + "\r\n"
             else:
                 msg += "LL: " + ndata["pvs"][key]["limitLL"] + "\r\n"
                 msg += "LU: " + ndata["pvs"][key]["limitLL"] + "\r\n"
+            if subrule:
+                msg += "Subrule: " + subrule + "\r\n"
         return msg
 
 # test_result = "{'send_sms': True, 'faulty': [], 'TS-04:PU-InjSeptG-1:Voltage-Mon(0)': ['TS-04:PU-InjSeptG-1:Voltage-Mon(407.7669430097902)'], 'subrule0': 'OR', 'TS-04:PU-InjSeptG-2:Voltage-Mon(1)': ['TS-04:PU-InjSeptG-2:Voltage-Mon(405.91594983988387)']}"

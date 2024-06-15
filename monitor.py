@@ -29,19 +29,9 @@ def evaluate():
                 pvlist_str.append(pv.pvname)
                 pvlist_dict[pv.pvname] = pv
 
-            # for pv in pvlist:
-            #     if pv.connected:
-            #         print(pv.pvname, pv.value)
-            #     else:
-            #         print(pv.pvname, 'NOT CONNECTED')
-
-            notifications_db = App_db('notifications')
-            # print(notifications_db.get())
-            # notifications_raw = notifications_db.get()
-            users_db = App_db(users)
-            notifications = notifications_raw2
+            notifications_raw = app_notifications.get()# notifications_raw2
             now = datetime.now()
-            for n in notifications:
+            for n in notifications_raw:
                 can_send = False
                 interval_can_send = False
                 persistence_can_send = False
@@ -60,8 +50,7 @@ def evaluate():
                     if now >= (n_lastsent + n_interval):
                         interval_can_send = True
                 else:
-                    if now >= (n_created + n_interval):
-                        interval_can_send = True
+                    interval_can_send = True
                 # test persistence:
                 if n_persistence == 'NO':
                     if n_lastsent == None:
@@ -81,22 +70,24 @@ def evaluate():
                 if can_send:
                     # test conditions inside notification (rules)
                     ans = test_notification(n, pvlist_dict, fullpvlist)
-                    print(ans)
-                    print(" ")
+                    # print(ans)
+                    # print(" ")
                     if ans["send_sms"]:
                         user_id = n["user_id"]
+                        users_db = App_db(users)
                         user = users_db.get(field=id, value=user_id)
                         sms_text = n["sms_text"]
-                        sms_text = ""
+                        sms_text = ''
                         text2send = sms_formatter(sms_text, ndata=ans)
-                        print(text2send)
-                        # r = m.sendsms_force(number=user.phone, msg=text2send)[0]
-                        r = 'ok'
-                        if r == 'ok':
+                        m = Modem(debug=True)
+                        r = m.sendsms_force(number=user.phone, msg=text2send)
+                        # r = 1
+                        if r == 1:
+                            print('SMS Sent!')
                             # update notification last_sent key
                             # notifications_db.update(n[id], last_sent, now)
                             # print(notifications_db.get())
-                            pass
+                            # pass
 
         except KeyboardInterrupt:
             break
