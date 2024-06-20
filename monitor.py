@@ -1,24 +1,27 @@
 #!./venv/bin/python
 from db import App_db, FullPVList
-from utils import makepvlist, connect_pvs, test_notification, sms_formatter
+from utils import makepvlist, connect_pvs, test_notification, sms_formatter, show_running
 from epics import PV
 from time import sleep
 from symbols import *
 from datetime import datetime, timedelta
 from json import dumps, loads
 from modem_usb import Modem
-from urllib import parse
+from iofunctions import current_path as cpath, write
+from os import path
 
 def evaluate():
     f = FullPVList()
     # f.update()
     fullpvlist = f.getlist()
-    k = 0
-    # m = Modem(debug=True)
-    # m.initialize()
-    while k == 0: #True:
+    # k = 0
+    m = Modem(debug=False)
+    m.initialize()
+    loop_index = 0
+    print("Running!")
+    while True: # k = 0
         try:
-            k = 1
+            # k = 1
             app_notifications = App_db("notifications")
             allpvs = makepvlist(fullpvlist, app_notifications)
 
@@ -29,18 +32,20 @@ def evaluate():
                 pvlist_str.append(pv.pvname)
                 pvlist_dict[pv.pvname] = pv
 
-            notifications_raw = app_notifications.get()# notifications_raw2
+            notifications_raw = app_notifications.get()
             now = datetime.now()
             for n in notifications_raw:
                 can_send = False
                 interval_can_send = False
                 persistence_can_send = False
                 expiration_can_send = False
-                if n["last_sent"] != None:
+                last_sent = n["last_sent"]
+                if last_sent != None:
                     n_lastsent = n["last_sent"]
                 else:
                     n_lastsent = None
                 n_notification = loads(n[notification])
+                n_id = n[id]
                 n_created = datetime.strptime(n_notification["created"], '%Y-%m-%d %H:%M')
                 n_interval = timedelta(minutes=int(n_notification["interval"]))
                 n_persistence = n_notification["persistence"]
@@ -70,28 +75,25 @@ def evaluate():
                 if can_send:
                     # test conditions inside notification (rules)
                     ans = test_notification(n, pvlist_dict, fullpvlist)
-                    # print(ans)
-                    # print(" ")
                     if ans["send_sms"]:
                         user_id = n["user_id"]
                         users_db = App_db(users)
                         user = users_db.get(field=id, value=user_id)
-                        sms_text = n["sms_text"]
-                        sms_text = ''
+                        sms_text = "" #n["sms_text"] <=========================
                         text2send = sms_formatter(sms_text, ndata=ans)
-                        m = Modem(debug=True)
                         r = m.sendsms_force(number=user.phone, msg=text2send)
-                        # r = 1
                         if r == 1:
-                            print('SMS Sent!')
                             # update notification last_sent key
-                            # notifications_db.update(n[id], last_sent, now)
-                            # print(notifications_db.get())
-                            # pass
-
+                            app_notifications.update(n_id, "last_sent", now)
+                            now = now.strftime("%Y-%m-%d %H:%M:%S")
+                            logmsg = now + " - SMS to " + user.username + " with message: " + text2send + "\r\n"
+                            write("log.txt", logmsg)
         except KeyboardInterrupt:
             break
-        sleep(1)
+
+        loop_index = show_running(loop_index) # printing running sign
+
+        sleep(0.2)
 
 
 evaluate()

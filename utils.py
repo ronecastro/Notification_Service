@@ -4,7 +4,7 @@
 from epics import PV, cainfo
 from classes import NotificationInfoByPV
 import symbols, json, re
-
+from time import sleep
 
 
 def row2dict(row):
@@ -180,6 +180,7 @@ def sms_formatter(sms_text, ndata=None):
         return sms_text
     else:
         msg = "WARNING!\r\n"
+        print("ndata", ndata)
         for key in ndata["pvs"]:
             pvname = ndata["pvs"][key]["pv"]
             pvvalue = ndata["pvs"][key]["value"]
@@ -195,6 +196,30 @@ def sms_formatter(sms_text, ndata=None):
             if subrule:
                 msg += "Subrule: " + subrule + "\r\n"
         return msg
+
+def show_running(loop_index):
+    if loop_index == 0:
+        print("|", end='\r')
+    if loop_index == 1:
+        print("/", end='\r')
+    if loop_index == 2:
+        print("-", end='\r')
+    if loop_index == 3:
+        print("\\", end='\r')
+    if loop_index == 4:
+        print("|", end='\r')
+    if loop_index == 5:
+        print("/", end='\r')
+    if loop_index == 6:
+        print("-", end='\r')
+    if loop_index == 7:
+        print("\\", end='\r')
+
+    loop_index += 1
+    if loop_index >= 8:
+        loop_index = 0
+
+    return loop_index
 
 # test_result = "{'send_sms': True, 'faulty': [], 'TS-04:PU-InjSeptG-1:Voltage-Mon(0)': ['TS-04:PU-InjSeptG-1:Voltage-Mon(407.7669430097902)'], 'subrule0': 'OR', 'TS-04:PU-InjSeptG-2:Voltage-Mon(1)': ['TS-04:PU-InjSeptG-2:Voltage-Mon(405.91594983988387)']}"
 # sms_text = ""

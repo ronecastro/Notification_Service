@@ -38,8 +38,11 @@ class Modem:
         self.msgnumber = None
         self.msg = None
         try:
-            self.serial_connection = serial.Serial(path, baudrate=115200, timeout=5)
-            self.serial_connection.reset_input_buffer()
+            if self.detect_modem_proc():
+                self.serial_connection = serial.Serial(path, baudrate=115200, timeout=5)
+                self.serial_connection.reset_input_buffer()
+            else:
+                exit()
         except OSError as e:
             if e.errno == 16:
                 exit()
@@ -232,7 +235,7 @@ class Modem:
                 if sent[0] == True:
                     is_delivered = self.get_delivery_report(msgnumber, sent[1], 6)
             else:
-                if i >= 2:
+                if i >= 4:
                     break
                 randomword += self.randomword(5)
                 if len(original_msg + '\r\n' + randomword) >= 160:
@@ -247,11 +250,15 @@ class Modem:
             i += 1
         return is_delivered
 
-    def kill_modem_proc(self):
+    def detect_modem_proc(self):
         for proc in psutil.process_iter():
             if proc.name() == 'ModemManager':
-                proc.kill()
-                print('Modem process killed')
+                # proc.kill()
+                if self.debug == True:
+                    print('Error: modem in use by another proccess!')
+                return False
+            else:
+                return True
 
     def initialize(self):
         self.reset()
@@ -335,7 +342,9 @@ class Modem:
             if self.force_delivery():
                 self.closeconnection()
                 return 1
-        return 0
+            else:
+                return 0
+        return 1
 
 # m = Modem(debug=True)
 # m.initialize()
