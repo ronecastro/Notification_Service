@@ -285,6 +285,12 @@ def notifications_add():
                     errors.append('pv')
                 if 'Set PV! ' not in emsg:
                     emsg += 'Set PV! '
+            temp = searchdb(pv, inroute=True)
+            if len(temp) == 0:
+                if 'pv' not in errors:
+                    errors.append('pv')
+                if 'RegEx ' not in emsg:
+                    emsg += 'PV / RegEx do not correspond to any PV(s)! '
             if not rule:
                 if 'rule' not in errors:
                     errors.append('rule')
@@ -416,6 +422,12 @@ def notifications_edit(id):
                     errors.append('pv')
                 if 'Set PV! ' not in emsg:
                     emsg += 'Set PV! '
+            temp = searchdb(pv, inroute=True)
+            if len(temp) == 0:
+                if 'pv' not in errors:
+                    errors.append('pv')
+                if 'RegEx ' not in emsg:
+                    emsg += 'PV / RegEx do not correspond to any PV(s)! '
             if not rule:
                 if 'rule' not in errors:
                     errors.append('rule')

@@ -58,7 +58,8 @@ def pvlistfromdb(): # gets the list from fullpvlist.db
             m.append(i)
     return m
 
-def searchdb(search):
+def searchdb(search, inroute=False):
+    print('pv', search)
     def regexp(expr, item):
         reg = re.compile(expr)
         return reg.search(item) is not None
@@ -73,7 +74,10 @@ def searchdb(search):
     for row in results:
         for i in row:
             m.append(i)
-    return jsonify(matching_results=m)
+    result = jsonify(matching_results=m)
+    if inroute == True:
+        return m
+    return result
 
 
 def update_db(database, id, key=None, value=None):

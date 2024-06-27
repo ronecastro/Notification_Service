@@ -42,9 +42,11 @@ class Modem:
                 self.serial_connection = serial.Serial(path, baudrate=115200, timeout=5)
                 self.serial_connection.reset_input_buffer()
             else:
+                print("Error on modem connection")
                 exit()
         except OSError as e:
             if e.errno == 16:
+                print(e)
                 exit()
 
     def send_to_modem(self, msg, sleep=0.2):

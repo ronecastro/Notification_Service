@@ -5,6 +5,7 @@ from epics import PV, cainfo
 from classes import NotificationInfoByPV
 import symbols, json, re
 from time import sleep
+from copy import deepcopy
 
 
 def row2dict(row):
@@ -16,21 +17,24 @@ def row2dict(row):
 
 def makepvlist(fullpvlist, app_notifications):
     """Returns a lisf of string PV names, without duplicates."""
-    pvlist = []
-    notifications_raw = app_notifications.get()
-    for item in notifications_raw:
-        item = row2dict(item)
-        i = 0
-        n = json.loads(json.dumps(item))
-        notification = json.loads(n[symbols.notification])
-        for key in notification[symbols.notificationCores]:
-            nC = symbols.notificationCore + str(i)
-            comp_regex = re.compile(symbols.BGNCHAR + key[nC][symbols.pv + str(i)] + symbols.ENDCHAR)
-            filterlist = list(filter(comp_regex.match, fullpvlist))
-            for pv in filterlist:
-                if pv not in pvlist:
-                    pvlist.append(pv)
-            i += 1
+    try:
+        pvlist = []
+        notifications_raw = app_notifications.get()
+        for item in notifications_raw:
+            item = row2dict(item)
+            i = 0
+            n = json.loads(json.dumps(item))
+            notification = json.loads(n[symbols.notification])
+            for key in notification[symbols.notificationCores]:
+                nC = symbols.notificationCore + str(i)
+                comp_regex = re.compile(symbols.BGNCHAR + key[nC][symbols.pv + str(i)] + symbols.ENDCHAR)
+                filterlist = list(filter(comp_regex.match, fullpvlist))
+                for pv in filterlist:
+                    if pv not in pvlist:
+                        pvlist.append(pv)
+                i += 1
+    except Exception as e:
+        print('Error on making PV list: ', e)
     return pvlist
 
 
@@ -69,10 +73,10 @@ def makepvpool(fullpvlist, app_notifications):
     return pvpool
 
 
-def connect_pvs(pvlist):
+def connect_pvs(pvlist, timeout=2):
     pvs = [PV(pvname) for pvname in pvlist]
     for pv in pvs:
-        pv.wait_for_connection(timeout=2)
+        pv.wait_for_connection(timeout=timeout)
     return pvs
 
 
@@ -114,64 +118,74 @@ def test_notification(n, pvlist_dict, fullpvlist):
     L, LL, LU = None, None, None
     complete_rule = []
     faulty = []
-    for core in nc:
-        rule_array = []
-        true_pvs = {}
-        partial_rule = ""
-        core_number = list(core.keys())[0][-1]
-        core_inner = core[symbols.notificationCore + core_number]
-        pv_in_notification = (core_inner[symbols.pv + core_number]).strip()
-        comp_regex = re.compile(pv_in_notification)
-        pvnames = list(filter(comp_regex.match, fullpvlist))
-        rule = core_inner[symbols.rule + core_number]
-        subrule = core_inner[symbols.subrule + core_number]
-        if (symbols.limit + core_number) in core_inner.keys():
-            L = core_inner[symbols.limit + core_number]
-        if (symbols.limitLL + core_number) in core_inner.keys():
-            LL = core_inner[symbols.limitLL + core_number]
-        if (symbols.limitLU + core_number) in core_inner.keys():
-            LU = core_inner[symbols.limitLU + core_number]
-        i = 0
-        for pvname in pvnames:
-            try:
-                if pvlist_dict[pvname].connected:
-                    pv = str(round(pvlist_dict[pvname].value, 3))
-                    rule4eval = re.sub("pv", pv, rule)
-                    rule4eval = re.sub("L$", str(L), rule4eval)
-                    rule4eval = re.sub("LL", str(LL), rule4eval)
-                    rule4eval = re.sub("LU", str(LU), rule4eval)
-                    eval_partial = eval(rule4eval)
-                    if eval_partial:
-                        true_pvs.update({"pv" : pvname})
-                        true_pvs.update({"value" : pv})
-                        true_pvs.update({"rule" : rule})
-                        true_pvs.update({"limit" : L})
-                        true_pvs.update({"limitLL" : LL})
-                        true_pvs.update({"limitLU" : LU})
-                        true_pvs.update({"subrule" : subrule})
-                        test_results["sizetrue"] += 1
-                    rule_array.append(str(eval_partial))
-                else:
+    try:
+        for core in nc:
+            rule_array = []
+            true_pvs = {}
+            true_pvs_array = []
+            partial_rule = ""
+            core_number = list(core.keys())[0].split("notificationCore", 1)[1]
+            core_inner = core[symbols.notificationCore + core_number]
+            pv_in_notification = (core_inner[symbols.pv + core_number]).strip()
+            comp_regex = re.compile("^" + pv_in_notification + "$")
+            pvnames = list(filter(comp_regex.match, fullpvlist))
+            rule = core_inner[symbols.rule + core_number]
+            subrule = core_inner[symbols.subrule + core_number]
+            if (symbols.limit + core_number) in core_inner.keys():
+                L = float(core_inner[symbols.limit + core_number])
+            if (symbols.limitLL + core_number) in core_inner.keys():
+                LL = float(core_inner[symbols.limitLL + core_number])
+            if (symbols.limitLU + core_number) in core_inner.keys():
+                LU = float(core_inner[symbols.limitLU + core_number])
+            i = 0
+            for pvname in pvnames:
+                try:
+                    if pvlist_dict[pvname].connected:
+                        pv = pvlist_dict[pvname].value
+                        try:
+                            float(str(pv))
+                        except:
+                            continue
+                        # rule4eval = re.sub("pv", str(pv), rule)
+                        # rule4eval = re.sub("L$", str(L), rule4eval)
+                        # rule4eval = re.sub("LL", str(LL), rule4eval)
+                        # rule4eval = re.sub("LU", str(LU), rule4eval)
+                        eval_partial = eval(rule)
+                        if eval_partial:
+                            true_pvs.update({"pv" : pvname})
+                            true_pvs.update({"value" : pv})
+                            true_pvs.update({"rule" : rule})
+                            true_pvs.update({"limit" : L})
+                            true_pvs.update({"limitLL" : LL})
+                            true_pvs.update({"limitLU" : LU})
+                            true_pvs.update({"subrule" : subrule})
+                            aux = deepcopy(true_pvs)
+                            true_pvs_array.append(aux)
+                            test_results["sizetrue"] += 1
+                        rule_array.append(str(eval_partial))
+                    else:
+                        faulty.append(pvname)
+                except Exception as e:
+                    print("Error on test: ", e)
                     faulty.append(pvname)
-            except Exception as e:
-                print('error: ', e)
-                faulty.append(pvname)
-                rule_array.append(str(False))
+                    rule_array.append(str(False))
 
-        partial_rule = " or ".join(rule_array)
-        partial_rule = eval(partial_rule)
+            partial_rule = " or ".join(rule_array)
+            partial_rule = eval(partial_rule)
 
-        complete_rule.append(str(partial_rule))
-        complete_rule.append(subrule.lower()) if subrule != '' else None
-        test_results["pvs"].update({
-            (pv_in_notification + "(" + core_number + ")") : true_pvs})
-        if subrule != '':
-            test_results.update({(symbols.subrule + core_number) : subrule})
-        L, LL, LU = None, None, None
-    if eval(" ".join(complete_rule)):
-        test_results.update({"send_sms" : True})
+            complete_rule.append(str(partial_rule))
+            complete_rule.append(subrule.lower()) if subrule != '' else None
+            test_results["pvs"].update({
+                (pv_in_notification + "(" + core_number + ")") : true_pvs_array})
+            if subrule != '':
+                test_results.update({(symbols.subrule + core_number) : subrule})
+            L, LL, LU = None, None, None
+        if eval(" ".join(complete_rule)):
+            test_results.update({"send_sms" : True})
 
-    test_results.update({"faulty" : faulty})
+        test_results.update({"faulty" : faulty})
+    except Exception as e:
+        print('Error on PV test: ', e)
 
     return test_results
 
@@ -180,22 +194,34 @@ def sms_formatter(sms_text, ndata=None):
         return sms_text
     else:
         msg = "WARNING!\r\n"
-        print("ndata", ndata)
-        for key in ndata["pvs"]:
-            pvname = ndata["pvs"][key]["pv"]
-            pvvalue = ndata["pvs"][key]["value"]
-            rule = ndata["pvs"][key]["rule"]
-            subrule = ndata["pvs"][key]["subrule"]
-            msg += pvname + " = " + pvvalue + "\r\n"
-            msg +="Rule: " + rule + "\r\n"
-            if ndata["pvs"][key]["limit"]:
-                msg += "Limit: " + ndata["pvs"][key]["limit"] + "\r\n"
-            else:
-                msg += "LL: " + ndata["pvs"][key]["limitLL"] + "\r\n"
-                msg += "LU: " + ndata["pvs"][key]["limitLL"] + "\r\n"
-            if subrule:
-                msg += "Subrule: " + subrule + "\r\n"
-        return msg
+        # print(ndata)
+        if ndata["sizetrue"] <= 2:
+            for key in ndata["pvs"]:
+                pvname = ndata["pvs"][key][0]["pv"]
+                pvvalue = ndata["pvs"][key][0]["value"]
+                rule = ndata["pvs"][key][0]["rule"]
+                subrule = ndata["pvs"][key][0]["subrule"]
+                msg += pvname + " = " + pvvalue + "\r\n"
+                msg +="Rule: " + rule + "\r\n"
+                if ndata["pvs"][key][0]["limit"]:
+                    msg += "Limit: " + ndata["pvs"][key][0]["limit"] + "\r\n"
+                else:
+                    msg += "LL: " + ndata["pvs"][key][0]["limitLL"] + "\r\n"
+                    msg += "LU: " + ndata["pvs"][key][0]["limitLL"] + "\r\n"
+                if subrule:
+                    msg += "Subrule: " + subrule + "\r\n"
+            return msg
+        else:
+            msg += "More than 3 PVs reached their limits!\r\n"
+            for key in ndata["pvs"]:
+                pvname = ndata["pvs"][key][0]["pv"]
+                pvvalue = ndata["pvs"][key][0]["value"]
+                rule = ndata["pvs"][key][0]["rule"]
+                break
+            msg += "First PV: " + pvname + "\r\n"
+            msg += "Value: " + str(pvvalue) + "\r\n"
+            msg += "Rule: " + rule + "\r\n"
+            return msg
 
 def show_running(loop_index):
     if loop_index == 0:
