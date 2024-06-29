@@ -83,13 +83,13 @@ def evaluate():
                         text2send = sms_formatter(sms_text, ndata=ans)
                         print(loop_index)
                         print(text2send)
-                        # r = m.sendsms_force(number=user.phone, msg=text2send)
-                        # if r == 1:
-                        #     # update notification last_sent key
-                        #     app_notifications.update(n_id, "last_sent", now)
-                        #     now = now.strftime("%Y-%m-%d %H:%M:%S")
-                        #     logmsg = now + " - SMS to " + user.username + " with message: " + text2send + "\r\n"
-                        #     write("log.txt", logmsg)
+                        r = 1 # = m.sendsms_force(number=user.phone, msg=text2send)
+                        if r == 1:
+                            # update notification last_sent key
+                            # app_notifications.update(n_id, "last_sent", now)
+                            now = now.strftime("%Y-%m-%d %H:%M:%S")
+                            logmsg = now + " - SMS to " + user.username + " with message: \n\r" + text2send + "\r\n"
+                            write("log.txt", logmsg)
         except KeyboardInterrupt:
             break
 

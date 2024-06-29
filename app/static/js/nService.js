@@ -295,7 +295,7 @@ async function submitForm(e, op, id=NaN){
                 $(document).ready(function() {
                     setTimeout(function() {
                         $('#alert').fadeOut('fast');
-                    }, 5000); // <-- time in milliseconds
+                    }, 6000); // <-- time in milliseconds
                     });
                 // document.getElementById("datetimepicker5").setAttribute('value', expiration);
                 // document.getElementById("interval").value = interval;

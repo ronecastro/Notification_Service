@@ -29,7 +29,6 @@ login.login_view = 'login'
 p = fromcfg('PREFIX','prefix')
 app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix=p)
 app.permanent_session_lifetime = 600
-# app.config['MESSAGE_FLASHING_OPTIONS'] = {'duration': 5}
 
 from app import routes, models
 # bootstrap = Bootstrap(app)
