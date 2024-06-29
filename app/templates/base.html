@@ -146,8 +146,8 @@
                         <i class="fa fa-bars"></i>
                     </button>
 
-                    <div class="container" style="display:flex;justify-content:center;">
-                        <div class="container" style="display:inline;text-align:center;width:auto;">
+                    <div id='container-top' class="container" style="display:flex;justify-content:center;">
+                        <div id='alert-top' class="container" style="display:inline;text-align:center;width:auto;">
                             {% with messages = get_flashed_messages(with_categories=true) %}
                                 {% if messages %}
                                 {% for category, message in messages %}
@@ -288,8 +288,8 @@
     <script type="text/javascript">
         $(document).ready(function() {
         setTimeout(function() {
-            $('#alert').fadeOut('slow');
-        }, 5000); // <-- time in milliseconds
+            $('#alert').fadeOut('fast');
+        }, 6000); // <-- time in milliseconds
         });
     </script>
 

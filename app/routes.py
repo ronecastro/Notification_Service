@@ -11,6 +11,7 @@ import json, re
 from dbfunctions import searchdb
 from utils import get_enum_list
 from copy import deepcopy
+from num2words import num2words
 
 #primary light blue
 #secondary light grey
@@ -229,7 +230,7 @@ def notifications_add():
     if request.method == "POST":
         action = request.form
         requestJson = json.dumps(request.get_json(force=True))
-        print("requestJson", requestJson)
+        # print("requestJson", requestJson)
         requestJson_load = json.loads(requestJson)
         expiration = requestJson_load['expiration']
         interval = requestJson_load['interval']
@@ -283,35 +284,46 @@ def notifications_add():
             if not pv:
                 if 'pv' not in errors:
                     errors.append('pv')
-                if 'Set PV! ' not in emsg:
-                    emsg += 'Set PV! '
-            temp = searchdb(pv, inroute=True)
-            if len(temp) == 0:
-                if 'pv' not in errors:
-                    errors.append('pv')
-                if 'RegEx ' not in emsg:
-                    emsg += 'PV / RegEx do not correspond to any PV(s)! '
+                    if 'Set PV! ' not in emsg:
+                        emsg += 'Set PV of ' + num2words(index+1, ordinal=True) + ' core! '
+            else:
+                temp = searchdb(pv, inroute=True)
+                if len(temp) == 0:
+                    if 'pv' not in errors:
+                        errors.append('pv')
+                    if 'RegEx ' not in emsg:
+                        emsg += 'PV / RegEx in ' + num2words(index+1, ordinal=True) + ' core do not correspond to any PV(s) in database! '
             if not rule:
                 if 'rule' not in errors:
                     errors.append('rule')
-                if "Set rule! " not in emsg:
-                    emsg += "Set rule! "
+                if "Set Rule! " not in emsg:
+                    if pv:
+                        emsg += 'Set Rule of ' + pv + '! '
+                    else:
+                        emsg += 'Set Rule of ' + num2words(index+1, ordinal=True) + ' core! '
             try:
                 if float(limit):
                     pass
             except Exception as e:
                 if 'limit' not in errors:
                     errors.append('limit')
-                if 'Limit must be numeric!' not in emsg:
-                    emsg += 'Limit must be numeric! '
+                if limit:
+                    if 'Limit must be numeric!' not in emsg:
+                        emsg += 'Limit must be numeric! '
             if not limit:
                 if 'limit' not in errors:
                     errors.append('limit')
-                if 'Set Limit of' not in emsg:
-                    emsg += 'Set Limit of ' + pv + '! '
+                if pv:
+                    if 'Set Limit of' not in emsg:
+                        emsg += 'Set Limit of ' + pv + '! '
+                else:
+                    if 'Set Limit of' not in emsg:
+                        emsg += 'Set Limit of ' + num2words(index+1, ordinal=True) + ' core! '
+
             try:
-                if float(limitLL):
-                    pass
+                if limitLL:
+                    if float(limitLL):
+                        pass
             except Exception as e:
                 if 'limitLL' not in errors:
                     errors.append('limitLL')
@@ -321,20 +333,44 @@ def notifications_add():
                 if 'limitLL' not in errors:
                     errors.append('limitLL')
                 if 'Set Limit LL! ' not in emsg:
-                    emsg += 'Set Limit LL of ' + pv + '! '
+                    if pv:
+                        emsg += 'Set Limit LL of ' + pv + '! '
+                    else:
+                        emsg += 'Set Limit LL of ' + num2words(index+1, ordinal=True) + 'core! '
             try:
-                if float(limitLU):
-                    pass
+                if limitLU:
+                    if float(limitLU):
+                        pass
             except Exception as e:
                 if 'limitLU' not in errors:
                     errors.append('limitLU')
-                if 'Limit LU must be numeric!' not in emsg:
-                    emsg += 'Limit LU must be numeric! '
+                if 'Limit LU must be numeric! ' not in emsg:
+                    if 'Limit LL must be numeric! ' in emsg:
+                        emsg = emsg.replace('Limit LL must be numeric!', '')
+                        if pv:
+                            emsg += 'Limits LL and LU of ' + pv + ' must be numeric! '
+                        else:
+                            emsg += 'Limits LL and LU of ' + num2words(index+1, ordinal=True) + ' core must be numeric! '
+                    else:
+                        if pv:
+                            emsg += 'Limit LU of ' + pv + ' must be numeric! '
+                        else:
+                            emsg += 'Limit LU of ' + num2words(index+1, ordinal=True) + ' core must be numeric! '
             if not limitLU:
                 if 'limitLU' not in errors:
                     errors.append('limitLU')
                 if 'Set Limit LU of' not in emsg:
-                    emsg += 'Set Limit LU of' + pv + '! '
+                    if 'Set Limit LL of' in emsg:
+                        if pv:
+                            emsg = emsg.replace('Set Limit LL of ' + pv + '! ', '')
+                            emsg += 'Set Limits LL and LU of ' + pv + '! '
+                        else:
+                            emsg += 'Set Limits LL and LU of ' + num2words(index+1, ordinal=True) + ' core! '
+                    else:
+                        if pv:
+                            emsg += 'Set Limit LU of ' + pv + '! '
+                        else:
+                            emsg += 'Set Limit LU of ' + num2words(index+1, ordinal=True) + ' core! '
         if len(sms_text) >= 160:
             if 'sms_text' not in errors:
                 errors.append('sms_text')
@@ -351,7 +387,8 @@ def notifications_add():
             flash('Notification added!', 'success')
             return url_for('notifications')
         else:
-            r = ({'warning': True}, 205, {'ContentType':'application/text'}) #tuple response format
+            url = url_for('notifications_add')
+            r = ({'url': url}, 205, {'ContentType':'application/text'}) #tuple response format
             flash(emsg, 'warning')
             return r
     session['last_url'] = url_for('notifications_add')
@@ -420,35 +457,46 @@ def notifications_edit(id):
             if not pv:
                 if 'pv' not in errors:
                     errors.append('pv')
-                if 'Set PV! ' not in emsg:
-                    emsg += 'Set PV! '
-            temp = searchdb(pv, inroute=True)
-            if len(temp) == 0:
-                if 'pv' not in errors:
-                    errors.append('pv')
-                if 'RegEx ' not in emsg:
-                    emsg += 'PV / RegEx do not correspond to any PV(s)! '
+                    if 'Set PV! ' not in emsg:
+                        emsg += 'Set PV of ' + num2words(index+1, ordinal=True) + ' core! '
+            else:
+                temp = searchdb(pv, inroute=True)
+                if len(temp) == 0:
+                    if 'pv' not in errors:
+                        errors.append('pv')
+                    if 'RegEx ' not in emsg:
+                        emsg += 'PV / RegEx in ' + num2words(index+1, ordinal=True) + ' core do not correspond to any PV(s) in database! '
             if not rule:
                 if 'rule' not in errors:
                     errors.append('rule')
-                if "Set rule! " not in emsg:
-                    emsg += "Set rule! "
+                if "Set Rule! " not in emsg:
+                    if pv:
+                        emsg += 'Set Rule of ' + pv + '! '
+                    else:
+                        emsg += 'Set Rule of ' + num2words(index+1, ordinal=True) + ' core! '
             try:
                 if float(limit):
                     pass
             except Exception as e:
                 if 'limit' not in errors:
                     errors.append('limit')
-                if 'Limit must be numeric!' not in emsg:
-                    emsg += 'Limit must be numeric! '
+                if limit:
+                    if 'Limit must be numeric!' not in emsg:
+                        emsg += 'Limit must be numeric! '
             if not limit:
                 if 'limit' not in errors:
                     errors.append('limit')
-                if 'Set Limit of' not in emsg:
-                    emsg += 'Set Limit of ' + pv + '! '
+                if pv:
+                    if 'Set Limit of' not in emsg:
+                        emsg += 'Set Limit of ' + pv + '! '
+                else:
+                    if 'Set Limit of' not in emsg:
+                        emsg += 'Set Limit of ' + num2words(index+1, ordinal=True) + ' core! '
+
             try:
-                if float(limitLL):
-                    pass
+                if limitLL:
+                    if float(limitLL):
+                        pass
             except Exception as e:
                 if 'limitLL' not in errors:
                     errors.append('limitLL')
@@ -458,20 +506,44 @@ def notifications_edit(id):
                 if 'limitLL' not in errors:
                     errors.append('limitLL')
                 if 'Set Limit LL! ' not in emsg:
-                    emsg += 'Set Limit LL of ' + pv + '! '
+                    if pv:
+                        emsg += 'Set Limit LL of ' + pv + '! '
+                    else:
+                        emsg += 'Set Limit LL of ' + num2words(index+1, ordinal=True) + 'core! '
             try:
-                if float(limitLU):
-                    pass
+                if limitLU:
+                    if float(limitLU):
+                        pass
             except Exception as e:
                 if 'limitLU' not in errors:
                     errors.append('limitLU')
-                if 'Limit LU must be numeric!' not in emsg:
-                    emsg += 'Limit LU must be numeric! '
+                if 'Limit LU must be numeric! ' not in emsg:
+                    if 'Limit LL must be numeric! ' in emsg:
+                        emsg = emsg.replace('Limit LL must be numeric!', '')
+                        if pv:
+                            emsg += 'Limits LL and LU of ' + pv + ' must be numeric! '
+                        else:
+                            emsg += 'Limits LL and LU of ' + num2words(index+1, ordinal=True) + ' core must be numeric! '
+                    else:
+                        if pv:
+                            emsg += 'Limit LU of ' + pv + ' must be numeric! '
+                        else:
+                            emsg += 'Limit LU of ' + num2words(index+1, ordinal=True) + ' core must be numeric! '
             if not limitLU:
                 if 'limitLU' not in errors:
                     errors.append('limitLU')
                 if 'Set Limit LU of' not in emsg:
-                    emsg += 'Set Limit LU of' + pv + '! '
+                    if 'Set Limit LL of' in emsg:
+                        if pv:
+                            emsg = emsg.replace('Set Limit LL of ' + pv + '! ', '')
+                            emsg += 'Set Limits LL and LU of ' + pv + '! '
+                        else:
+                            emsg += 'Set Limits LL and LU of ' + num2words(index+1, ordinal=True) + ' core! '
+                    else:
+                        if pv:
+                            emsg += 'Set Limit LU of ' + pv + '! '
+                        else:
+                            emsg += 'Set Limit LU of ' + num2words(index+1, ordinal=True) + ' core! '
         if len(errors) == 0:
             notification = db.session.query(Notification).filter_by(id=id).first()
             notification.notification = json.dumps(requestJson_load)
@@ -482,12 +554,13 @@ def notifications_edit(id):
         else:
             r = ({'warning': True}, 205, {'ContentType':'application/text'}) #tuple response format
             flash(emsg, 'warning')
+            print(session)
             return r
     rules = db.session.query(Rule).all()
     notification = db.session.query(Notification).filter_by(id=id).all()
     session['last_url'] = url_for('notifications_edit', id=id)
     session['login_required'] = True
-    print(notification)
+    # print(notification)
     return render_template('notifications-edit.html', id=id, rules=rules, \
         notification=notification, title='Edit Notification')
 

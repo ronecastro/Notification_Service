@@ -59,7 +59,6 @@ def pvlistfromdb(): # gets the list from fullpvlist.db
     return m
 
 def searchdb(search, inroute=False):
-    print('pv', search)
     def regexp(expr, item):
         reg = re.compile(expr)
         return reg.search(item) is not None
@@ -69,7 +68,8 @@ def searchdb(search, inroute=False):
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.create_function("REGEXP", 2, regexp)
-    results = conn.execute('SELECT * FROM fullpvlist_db WHERE pv REGEXP ? LIMIT 10',(search,))
+    search_plus = "^" + search + "$"
+    results = conn.execute('SELECT * FROM fullpvlist_db WHERE pv REGEXP ? LIMIT 10',(search_plus,))
     m = []
     for row in results:
         for i in row:

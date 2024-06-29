@@ -290,17 +290,23 @@ async function submitForm(e, op, id=NaN){
             if (xhr.status == 200){
                 window.location.href = "/ns/notifications"; }
             else {
-                window.location.reload();
-                document.getElementById("datetimepicker5").setAttribute('value', expiration);
-                document.getElementById("interval").value = interval;
-                document.getElementById("persistence").value = persistence;
-                document.getElementById("sms_text").value = sms_text;
-                document.getElementById("pv0").value = pv;
-                document.getElementById("rule0").value = rule;
-                document.getElementById("limit0").value = limit;
-                document.getElementById("limitLL0").value = limitLL;
-                document.getElementById("limitLU0").value = limitLU;
-                document.getElementById("subrule0").value = subrule;
+                // window.location.reload();
+                $('#alert-top').load(xhr.responseURL + ' #alert-top');
+                $(document).ready(function() {
+                    setTimeout(function() {
+                        $('#alert').fadeOut('fast');
+                    }, 5000); // <-- time in milliseconds
+                    });
+                // document.getElementById("datetimepicker5").setAttribute('value', expiration);
+                // document.getElementById("interval").value = interval;
+                // document.getElementById("persistence").value = persistence;
+                // document.getElementById("sms_text").value = sms_text;
+                // document.getElementById("pv0").value = pv;
+                // document.getElementById("rule0").value = rule;
+                // document.getElementById("limit0").value = limit;
+                // document.getElementById("limitLL0").value = limitLL;
+                // document.getElementById("limitLU0").value = limitLU;
+                // document.getElementById("subrule0").value = subrule;
                 }
             }
         }
@@ -314,17 +320,24 @@ async function submitForm(e, op, id=NaN){
         if (xhr.status == 200){
             window.location.href = "/ns/notifications"; }
         else {
-            window.location.reload();
-            document.getElementById("datetimepicker5").setAttribute('value', expiration);
-            document.getElementById("interval").value = interval;
-            document.getElementById("persistence").value = persistence;
-            document.getElementById("sms_text").value = sms_text;
-            document.getElementById("pv0").value = pv;
-            document.getElementById("rule0").value = rule;
-            document.getElementById("limit0").value = limit;
-            document.getElementById("limitLL0").value = limitLL;
-            document.getElementById("limitLU0").value = limitLU;
-            document.getElementById("subrule0").value = subrule; }
+            $('#alert-top').load(xhr.responseURL + ' #alert-top');
+            $(document).ready(function() {
+                setTimeout(function() {
+                    $('#alert').fadeOut('fast');
+                }, 5000); // <-- time in milliseconds
+                });
+            // window.location.reload();
+            // document.getElementById("datetimepicker5").setAttribute('value', expiration);
+            // document.getElementById("interval").value = interval;
+            // document.getElementById("persistence").value = persistence;
+            // document.getElementById("sms_text").value = sms_text;
+            // document.getElementById("pv0").value = pv;
+            // document.getElementById("rule0").value = rule;
+            // document.getElementById("limit0").value = limit;
+            // document.getElementById("limitLL0").value = limitLL;
+            // document.getElementById("limitLU0").value = limitLU;
+            // document.getElementById("subrule0").value = subrule; }
+            }
         }
     }
     else {
