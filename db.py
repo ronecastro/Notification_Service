@@ -21,38 +21,37 @@ class App_db:
         return connection
 
     def get(self, field='all', value=None, rule_id=None, user_id=None, notification_id=None):
-        databases = [users, notifications, rules]
+        databases = ["users", "notifications", "rules"]
         database = self.database
         if database not in databases:
             raise ValueError("Invalid model. Expected one of: %s" % databases)
-        result=""
-        if database == users:
+        if database == "users":
             try:
-                if field == id:
+                if field == "id":
                     result = User.query.filter_by(id=value).first()
-                if field == username:
+                if field == "username":
                     result = User.query.filter_by(username=value).all()
-                if field == email:
+                if field == "email":
                     result = User.query.filter_by(email=value).all()
-                if field == phone:
+                if field == "phone":
                     result = User.query.filter_by(phone=value).first()
                 if field == 'all':
                     result = User.query.all()
             except Exception as e:
                 result = e
 
-        if database == notifications:
+        if database == "notifications":
             try:
-                if field == id:
+                if field == "id":
                     result = Notification.query.filter_by(id=value).first()
-                if field == 'user_id':
+                if field == "user_id":
                     result = Notification.query.filter_by(user_id=value).all()
-                if field == 'all':
+                if field == "all":
                     result = Notification.query.all()
             except Exception as e:
                 result = e
 
-        if database == rules:
+        if database == "rules":
             try:
                 if field == "all":
                     result = Rule.query.all()
@@ -74,36 +73,36 @@ class App_db:
             db.session.commit()
 
     def delete(self, field, id):
-        if field == 'users':
+        if field == "users":
             User.query.filter_by(id=id).delete()
             db.session.commit()
 
     def update(self, id=None, key=None, value=None):
         try:
-            if self.database == notifications:
+            if self.database == "notifications":
                 notification = Notification.query.filter_by(id=id).first()
-                if key == notification:
+                if key == "notification":
                     notification.notification = value
                 # if key == sms_text:
                 #     notification.sms_text = value
-                if key == last_sent:
+                if key == "last_sent":
                     notification.last_sent = value
                 # db.session.query(Notification).filter_by(id=id).update({key: value})
                 db.session.commit()
-            if self.database == users:
+            if self.database == "users":
                 user = User.query.filter_by(id=id).first()
-                if key == username:
+                if key == "username":
                     user.username = value
-                if key == email:
+                if key == "email":
                     user.email = value
-                if key == phone:
+                if key == "phone":
                     user.phone = value
                 db.session.commit()
-            if self.database == rules:
+            if self.database == "rules":
                 rule = Rule.query.filter_by(id=id).first()
                 rule.rule = value
                 db.session.commit()
-            ans = 'ok'
+            ans = 1
         except Exception as e:
             return e
         return ans

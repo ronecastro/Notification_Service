@@ -28,9 +28,10 @@ def write(filepath, msg):
         f = open(filepath, 'a')
         f.write(msg)
         f.close
-        return 'ok'
+        return 1
     except Exception as e:
-        return e
+        print("Error on writing: ", filepath, "\n\rmessage:", msg, "\n\rwith error: ", e)
+        return 0
 
 def tcpsock_client(msg, ip='locahost', port=5007):
     address = (ip, port)

@@ -1,101 +1,47 @@
 #!./venv/bin/python
-from db import App_db, FullPVList
-from utils import makepvlist, connect_pvs, test_notification, sms_formatter, show_running
+from utils import makepvlist, connect_pvs, post_test_notification, pre_test_notification, show_running, byebye, prepare_evaluate
 from epics import PV
 from time import sleep
 from symbols import *
-from datetime import datetime, timedelta
-from json import dumps, loads
-from modem_usb import Modem
-from iofunctions import current_path as cpath, write
 from os import path
+from datetime import datetime as dt
+from db import App_db, FullPVList
 
 def evaluate():
+    # make full PV list and create modem object
     f = FullPVList()
-    # f.update()
-    fullpvlist = f.getlist()
-    # k = 0
-    # m = Modem(debug=False)
-    # m.initialize()
+    fullpvlist, modem = prepare_evaluate(f, test_mode=False)
     loop_index = 0
     print("Running!")
-    while True: # k = 0
+    while True:
         try:
-            # k = 1
+            # load notification db
             app_notifications = App_db("notifications")
+            # create pv list with all pvs used in db
             allpvs = makepvlist(fullpvlist, app_notifications)
-
+            # create list of PV objects
             pvlist = connect_pvs(allpvs)
-            pvlist_dict = {}
-            pvlist_str = []
-            for pv in pvlist:
-                pvlist_str.append(pv.pvname)
-                pvlist_dict[pv.pvname] = pv
-
+            # create dictionary from pv list
+            pvlist_dict = {pv.pvname : pv for pv in pvlist}
+            # get notifications from db
             notifications_raw = app_notifications.get()
-            now = datetime.now()
+            now = dt.now()
+            # for each notification
             for n in notifications_raw:
-                can_send = False
-                interval_can_send = False
-                persistence_can_send = False
-                expiration_can_send = False
-                last_sent = n["last_sent"]
-                if last_sent != None:
-                    n_lastsent = n["last_sent"]
-                else:
-                    n_lastsent = None
-                n_notification = loads(n[notification])
-                n_id = n[id]
-                n_created = datetime.strptime(n_notification["created"], '%Y-%m-%d %H:%M')
-                n_interval = timedelta(minutes=int(n_notification["interval"]))
-                n_persistence = n_notification["persistence"]
-                n_expiration = datetime.strptime(n_notification["expiration"], '%Y-%m-%d %H:%M')
-                # test interval:
-                if n_lastsent != None:
-                    if now >= (n_lastsent + n_interval):
-                        interval_can_send = True
-                else:
-                    interval_can_send = True
-                # test persistence:
-                if n_persistence == 'NO':
-                    if n_lastsent == None:
-                        persistence_can_send = True
-                else:
-                    persistence_can_send = True
-                # test expiration
-                if now <= n_expiration:
-                    expiration_can_send = True
-
-                # if all conditions outside notification
-                if interval_can_send == True and \
-                    persistence_can_send == True and \
-                    expiration_can_send == True:
-                    can_send = True
-
+                #test condition outside notification rules
+                can_send = pre_test_notification(n, now)
                 if can_send:
-                    # test conditions inside notification (rules)
-                    ans = test_notification(n, pvlist_dict, fullpvlist)
+                    # test conditions inside notification rules
+                    ans = post_test_notification(n, pvlist_dict, fullpvlist)
                     if ans["send_sms"]:
-                        user_id = n["user_id"]
-                        users_db = App_db(users)
-                        user = users_db.get(field=id, value=user_id)
-                        sms_text = "" #n["sms_text"] <=========================
-                        text2send = sms_formatter(sms_text, ndata=ans)
-                        print(loop_index)
-                        print(text2send)
-                        r = 1 # = m.sendsms_force(number=user.phone, msg=text2send)
-                        if r == 1:
-                            # update notification last_sent key
-                            # app_notifications.update(n_id, "last_sent", now)
-                            now = now.strftime("%Y-%m-%d %H:%M:%S")
-                            logmsg = now + " - SMS to " + user.username + " with message: \n\r" + text2send + "\r\n"
-                            write("log.txt", logmsg)
+                        # send SMS to phone number and write to log.txt
+                        users_db = App_db("users")
+                        r = byebye(ans, n, now, app_notifications, users_db, modem, update_db=False, update_log=True, no_text=True, send=False)
         except KeyboardInterrupt:
             break
-
+        # print 'running' symbol each iteration
         loop_index = show_running(loop_index) # printing running sign
-
-        sleep(0.2)
+        sleep(0.1)
 
 
 evaluate()

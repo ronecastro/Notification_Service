@@ -6,6 +6,11 @@ from classes import NotificationInfoByPV
 import symbols, json, re
 from time import sleep
 from copy import deepcopy
+from datetime import datetime, timedelta
+from json import dumps, loads
+from db import App_db, FullPVList
+from iofunctions import current_path as cpath, write
+from modem_usb import Modem
 
 
 def row2dict(row):
@@ -73,10 +78,11 @@ def makepvpool(fullpvlist, app_notifications):
     return pvpool
 
 
-def connect_pvs(pvlist, timeout=2):
+def connect_pvs(pvlist, timeout=1):
     pvs = [PV(pvname) for pvname in pvlist]
     for pv in pvs:
-        pv.wait_for_connection(timeout=timeout)
+        if not pv.connected:
+            pv.wait_for_connection(timeout=timeout)
     return pvs
 
 
@@ -110,7 +116,8 @@ def get_enum_list(pv):
     else:
         return None
 
-def test_notification(n, pvlist_dict, fullpvlist):
+def post_test_notification(n, pvlist_dict, fullpvlist):
+    """test if notification rules evaluates to true."""
     notification = n[symbols.notification]
     notification_json = json.loads(notification)
     nc = notification_json[symbols.notificationCores]
@@ -146,10 +153,6 @@ def test_notification(n, pvlist_dict, fullpvlist):
                             float(str(pv))
                         except:
                             continue
-                        # rule4eval = re.sub("pv", str(pv), rule)
-                        # rule4eval = re.sub("L$", str(L), rule4eval)
-                        # rule4eval = re.sub("LL", str(LL), rule4eval)
-                        # rule4eval = re.sub("LU", str(LU), rule4eval)
                         eval_partial = eval(rule)
                         if eval_partial:
                             true_pvs.update({"pv" : pvname})
@@ -190,8 +193,9 @@ def test_notification(n, pvlist_dict, fullpvlist):
     return test_results
 
 def sms_formatter(sms_text, ndata=None):
+    """format SMS message text to sent to modem."""
     if sms_text:
-        return sms_text
+        return sms_text + "\r\n"
     else:
         msg = "WARNING!\r\n"
         # print(ndata)
@@ -201,13 +205,13 @@ def sms_formatter(sms_text, ndata=None):
                 pvvalue = ndata["pvs"][key][0]["value"]
                 rule = ndata["pvs"][key][0]["rule"]
                 subrule = ndata["pvs"][key][0]["subrule"]
-                msg += pvname + " = " + pvvalue + "\r\n"
+                msg += pvname + " = " + str(pvvalue) + "\r\n"
                 msg +="Rule: " + rule + "\r\n"
                 if ndata["pvs"][key][0]["limit"]:
-                    msg += "Limit: " + ndata["pvs"][key][0]["limit"] + "\r\n"
+                    msg += "Limit: " + str(ndata["pvs"][key][0]["limit"]) + "\r\n"
                 else:
-                    msg += "LL: " + ndata["pvs"][key][0]["limitLL"] + "\r\n"
-                    msg += "LU: " + ndata["pvs"][key][0]["limitLL"] + "\r\n"
+                    msg += "LL: " + str(ndata["pvs"][key][0]["limitLL"]) + "\r\n"
+                    msg += "LU: " + str(ndata["pvs"][key][0]["limitLL"]) + "\r\n"
                 if subrule:
                     msg += "Subrule: " + subrule + "\r\n"
             return msg
@@ -224,6 +228,7 @@ def sms_formatter(sms_text, ndata=None):
             return msg
 
 def show_running(loop_index):
+    """show running status on prompt."""
     if loop_index == 0:
         print("|", end='\r')
     if loop_index == 1:
@@ -246,6 +251,101 @@ def show_running(loop_index):
         loop_index = 0
 
     return loop_index
+
+
+def pre_test_notification(n, now):
+    """test if notification can be sent."""
+    can_send = False
+    interval_can_send = False
+    persistence_can_send = False
+    expiration_can_send = False
+    last_sent = n["last_sent"]
+    if last_sent != None:
+        n_lastsent = n["last_sent"]
+    else:
+        n_lastsent = None
+    n_notification = loads(n["notification"])
+    n_id = n["id"]
+    n_created = datetime.strptime(n_notification["created"], '%Y-%m-%d %H:%M')
+    n_interval = timedelta(minutes=int(n_notification["interval"]))
+    n_persistence = n_notification["persistence"]
+    n_expiration = datetime.strptime(n_notification["expiration"], '%Y-%m-%d %H:%M')
+    # test interval:
+    if n_lastsent != None:
+        if now >= (n_lastsent + n_interval):
+            interval_can_send = True
+    else:
+        interval_can_send = True
+    # test persistence:
+    if n_persistence == 'NO':
+        if n_lastsent == None:
+            persistence_can_send = True
+    else:
+        persistence_can_send = True
+    # test expiration
+    if now <= n_expiration:
+        expiration_can_send = True
+
+    # if all conditions outside notification
+    if interval_can_send == True and \
+        persistence_can_send == True and \
+        expiration_can_send == True:
+        can_send = True
+    return can_send
+
+def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, update_log=True, no_text=False, send=True):
+    r = 0
+    try:
+        user_id = n["user_id"]
+        user = users_db.get(field="id", value=user_id)
+        sms_text = n["sms_text"]
+        if no_text:
+            sms_text = ""
+        text2send = sms_formatter(sms_text, ndata=ans)
+        if send:
+            r = modem.sendsms_force(number=user.phone, msg=text2send)
+        else:
+            r = 1
+        if r:
+            # update notification last_sent key
+            if update_db:
+                n_id = n["id"]
+                r = app_notifications.update(n_id, "last_sent", now)
+                # update log.txt
+            if r and update_log:
+                now = now.strftime("%Y-%m-%d %H:%M:%S")
+                logmsg = now + " - SMS to " + str(user.username) + " with message: \r\n" + text2send + "\r\n"
+                r = write("log.txt", logmsg)
+        return r
+    except Exception as e:
+        print("Error on sending SMS: ", e)
+        return r
+
+def prepare_evaluate(f, test_mode=False):
+    if test_mode:
+        try:
+            fullpvlist = f.getlist()
+            print("Full PV List created")
+            modem = None
+            print("Modem not created")
+            print("USB Modem not initialized")
+        except Exception as e:
+            print("Error on prepare_evaluate function: ", e)
+            exit()
+    else:
+        try:
+            f.update()
+            fullpvlist = f.getlist()
+            print("Full PV List created")
+            modem = Modem(debug=False)
+            print("Modem object created")
+            modem.initialize()
+            print("USB Modem initialized")
+        except Exception as e:
+            print("Error on prepare_evaluate function: ", e)
+            exit()
+    return fullpvlist, modem
+
 
 # test_result = "{'send_sms': True, 'faulty': [], 'TS-04:PU-InjSeptG-1:Voltage-Mon(0)': ['TS-04:PU-InjSeptG-1:Voltage-Mon(407.7669430097902)'], 'subrule0': 'OR', 'TS-04:PU-InjSeptG-2:Voltage-Mon(1)': ['TS-04:PU-InjSeptG-2:Voltage-Mon(405.91594983988387)']}"
 # sms_text = ""

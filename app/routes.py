@@ -6,10 +6,9 @@ from flask import render_template, flash, redirect, url_for, request, g, session
 from flask_login import current_user, login_user, logout_user, login_required
 # from werkzeug.urls import url_parse
 from app.forms import LoginForm, RegistrationForm, RuleForm, NotificationForm
-from datetime import datetime
 import json, re
 from dbfunctions import searchdb
-from utils import get_enum_list
+from utils import *
 from copy import deepcopy
 from num2words import num2words
 
@@ -21,6 +20,7 @@ from num2words import num2words
 #info blueish green?!
 #light light grey text no background
 #dark dark grey
+
 
 @app.route('/autocomplete', methods=['GET'])
 def autocomplete():
@@ -64,7 +64,7 @@ def profile_edit(username):
         if form.cancel.data:
             return redirect(url_for('profile', username=user.username))
         phone = form.phone.data
-        pattern = "^[+][\d]+$"
+        pattern = r"^[+][\d]+$"
         if re.match(pattern, phone):
             if form.validate():
                 user.email = form.email.data
