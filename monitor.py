@@ -36,12 +36,16 @@ def evaluate():
                     if ans["send_sms"]:
                         # send SMS to phone number and write to log.txt
                         users_db = App_db("users")
-                        r = byebye(ans, n, now, app_notifications, users_db, modem, update_db=False, update_log=True, no_text=True, send=False)
+                        update_db= True # update notification database
+                        update_log = True # write to log.txt
+                        no_text = False # force SMS text to none
+                        send = True # send SMS through modem
+                        r = byebye(ans, n, now, app_notifications, users_db, modem, update_db=update_db, update_log=update_log, no_text=no_text, send=send)
         except KeyboardInterrupt:
             break
         # print 'running' symbol each iteration
         loop_index = show_running(loop_index) # printing running sign
-        sleep(0.1)
+        sleep(0.15)
 
 
 evaluate()

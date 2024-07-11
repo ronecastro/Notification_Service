@@ -78,11 +78,15 @@ def makepvpool(fullpvlist, app_notifications):
     return pvpool
 
 
-def connect_pvs(pvlist, timeout=1):
+def connect_pvs(pvlist, timeout=2):
     pvs = [PV(pvname) for pvname in pvlist]
     for pv in pvs:
-        if not pv.connected:
+        if pv.connected:
+            sleep(0.015)
+        else:
             pv.wait_for_connection(timeout=timeout)
+            if pv.connected:
+                sleep(0.015)
     return pvs
 
 
@@ -152,6 +156,8 @@ def post_test_notification(n, pvlist_dict, fullpvlist):
                         try:
                             float(str(pv))
                         except:
+                            rule_array.append(str(False))
+                            faulty.append(pvname)
                             continue
                         eval_partial = eval(rule)
                         if eval_partial:

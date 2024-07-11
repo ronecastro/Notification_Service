@@ -348,6 +348,8 @@ class Modem:
                 return 0
         return 1
 
+########## For testing purpose ############
+
 # m = Modem(debug=True)
 # m.initialize()
 # number = '+5519997397443'
