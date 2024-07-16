@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from iofunctions import fromcfg
+from multiprocessing import Process
 
 class PrefixMiddleware(object):
     def __init__(self, app, prefix=''):
@@ -28,7 +29,8 @@ login = LoginManager(app)
 login.login_view = 'login'
 p = fromcfg('PREFIX','prefix')
 app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix=p)
-app.permanent_session_lifetime = 600
+app.config['SESSION_PERMANENT'] = True
+# app.permanent_session_lifetime = 600
 
 from app import routes, models
 # bootstrap = Bootstrap(app)
@@ -39,5 +41,9 @@ with app.app_context():
     else:
         migrate.init_app(app, db)
 
-if __name__ == "__main__":
-    app.run(ssl_context='adhoc')
+if __name__ == "app":
+    from monitor import *
+    p = Process(target=evaluate, name="NSMonitor")
+    p.start()
+    print("p.pid", p.pid, p.name)
+    print("\n\r")

@@ -3,9 +3,10 @@ from utils import makepvlist, connect_pvs, post_test_notification, pre_test_noti
 from epics import PV
 from time import sleep
 from symbols import *
-from os import path
 from datetime import datetime as dt
-from db import App_db, FullPVList
+from db import * #App_db, FullPVList
+import os
+from psutil import Process as ps_proc
 
 def evaluate():
     # make full PV list and create modem object
@@ -47,8 +48,16 @@ def evaluate():
         loop_index = show_running(loop_index) # printing running sign
         sleep(0.15)
 
+        if os.name == "posix":
+            me = ps_proc(os.getpid())
+            if me.parent() is not None:
+                continue
+            else:
+                print("Parent died")
+                break
 
-evaluate()
+
+# evaluate()
 
 # users_db = App_db(users)
 # u = users_db.get(field="id", value=7)
