@@ -43,6 +43,6 @@ with app.app_context():
 
 if __name__ == "app":
     from monitor import *
-    p = Process(target=evaluate, name="NSMonitor")
+    p = Process(target=evaluate)
     p.start()
     print("\n\r")

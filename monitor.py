@@ -50,6 +50,7 @@ def evaluate():
 
         if os.name == "posix":
             me = ps_proc(os.getpid())
+            print(me.pid, me.parent().pid)
             if me.parent() is not None:
                 continue
             else:
