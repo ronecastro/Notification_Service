@@ -45,5 +45,4 @@ if __name__ == "app":
     from monitor import *
     p = Process(target=evaluate, name="NSMonitor")
     p.start()
-    print("p.pid", p.pid, p.name)
     print("\n\r")
