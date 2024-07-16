@@ -322,6 +322,7 @@ def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, upda
                 now = now.strftime("%Y-%m-%d %H:%M:%S")
                 logmsg = now + " - SMS to " + str(user.username) + " with message: \r\n" + text2send + "\r\n"
                 r = write("log.txt", logmsg)
+                print(logmsg)
         return r
     except Exception as e:
         print("Error on sending SMS: ", e)
