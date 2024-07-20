@@ -28,35 +28,45 @@ class App_db:
         if database == "users":
             try:
                 if field == "id":
-                    result = User.query.filter_by(id=value).first()
+                    result = db.session.query(User).filter_by(id=value).first()
+                    #result = User.query.filter_by(id=value).first()
                 if field == "username":
-                    result = User.query.filter_by(username=value).all()
+                    result = db.session.query(User).filter_by(username=value).first()
+                    #result = User.query.filter_by(username=value).all()
                 if field == "email":
-                    result = User.query.filter_by(email=value).all()
+                    result = db.session.query(User).filter_by(email=value).first()
+                    #result = User.query.filter_by(email=value).all()
                 if field == "phone":
-                    result = User.query.filter_by(phone=value).first()
+                    result = db.session.query(User).filter_by(phone=value).first()
+                    #result = User.query.filter_by(phone=value).first()
                 if field == 'all':
-                    result = User.query.all()
+                    result = db.session.query(User).all()
+                    #result = User.query.all()
             except Exception as e:
                 result = e
 
         if database == "notifications":
             try:
                 if field == "id":
-                    result = Notification.query.filter_by(id=value).first()
+                    result = db.session.query(Notification).filter_by(id=value).first()
+                    #result = Notification.query.filter_by(id=value).first()
                 if field == "user_id":
-                    result = Notification.query.filter_by(user_id=value).all()
+                    result = db.session.query(Notification).filter_by(user_id=value).first()
+                    #result = Notification.query.filter_by(user_id=value).all()
                 if field == "all":
-                    result = Notification.query.all()
+                    result = db.session.query(Notification).all()
+                    #result = Notification.query.all()
             except Exception as e:
                 result = e
 
         if database == "rules":
             try:
                 if field == "all":
-                    result = Rule.query.all()
+                    result = db.session.query(Rule).all()
+                    #result = Rule.query.all()
                 if rule_id != None:
-                    result = Rule.query.filter_by(id=rule_id).first()
+                    result = db.session.query(Rule).filter_by(id=value).first()
+                    #result = Rule.query.filter_by(id=rule_id).first()
             except Exception as e:
                 result = e
 
@@ -80,7 +90,8 @@ class App_db:
     def update(self, id=None, key=None, value=None):
         try:
             if self.database == "notifications":
-                notification = Notification.query.filter_by(id=id).first()
+                notification = db.session.query(Notification).filter_by(id=id).first()
+                #notification = Notification.query.filter_by(id=id).first()
                 if key == "notification":
                     notification.notification = value
                 # if key == sms_text:
@@ -90,7 +101,8 @@ class App_db:
                 # db.session.query(Notification).filter_by(id=id).update({key: value})
                 db.session.commit()
             if self.database == "users":
-                user = User.query.filter_by(id=id).first()
+                user = db.session.query(User).filter_by(id=id).first()
+                #user = User.query.filter_by(id=id).first()
                 if key == "username":
                     user.username = value
                 if key == "email":
@@ -99,7 +111,8 @@ class App_db:
                     user.phone = value
                 db.session.commit()
             if self.database == "rules":
-                rule = Rule.query.filter_by(id=id).first()
+                rule = db.session.query(Rule).filter_by(id=id).first()
+                #rule = Rule.query.filter_by(id=id).first()
                 rule.rule = value
                 db.session.commit()
             ans = 1

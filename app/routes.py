@@ -96,9 +96,11 @@ def login():
         except Exception as e:
             pass
         login_user(user, remember=form.remember_me.data)
-        session['last_url'] = '/ns/index'
+        next_page = request.args.get('next')
+        if not next_page:
+            next_page = url_for('index')
         flash('Login successfull!', 'success')
-        return redirect(url_for('index'))
+        return redirect(next_page)
     return render_template('login.html', title='Sign In', form=form)
 
 @app.route('/login-modal', methods=['GET', 'POST'])
@@ -554,7 +556,6 @@ def notifications_edit(id):
         else:
             r = ({'warning': True}, 205, {'ContentType':'application/text'}) #tuple response format
             flash(emsg, 'warning')
-            print(session)
             return r
     rules = db.session.query(Rule).all()
     notification = db.session.query(Notification).filter_by(id=id).all()

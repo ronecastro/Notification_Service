@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, url_for
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -29,8 +29,8 @@ login = LoginManager(app)
 login.login_view = 'login'
 p = fromcfg('PREFIX','prefix')
 app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix=p)
-app.config['SESSION_PERMANENT'] = True
-# app.permanent_session_lifetime = 600
+# app.config['SESSION_PERMANENT'] = True
+app.permanent_session_lifetime = 600
 
 from app import routes, models
 # bootstrap = Bootstrap(app)
@@ -41,8 +41,9 @@ with app.app_context():
     else:
         migrate.init_app(app, db)
 
-if __name__ == "app":
-    from monitor import *
-    p = Process(target=evaluate)
-    p.start()
-    print("\n\r")
+# run evaluate process to start backend
+# if __name__ == "app":
+#     from monitor import evaluate
+#     p = Process(target=evaluate)
+#     p.start()
+#     print("\n\r")

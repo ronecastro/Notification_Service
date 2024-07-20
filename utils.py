@@ -267,7 +267,7 @@ def pre_test_notification(n, now):
     expiration_can_send = False
     last_sent = n["last_sent"]
     if last_sent != None:
-        n_lastsent = n["last_sent"]
+        pass
     else:
         n_lastsent = None
     n_notification = loads(n["notification"])
@@ -323,6 +323,13 @@ def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, upda
                 logmsg = now + " - SMS to " + str(user.username) + " with message: \r\n" + text2send + "\r\n"
                 r = write("log.txt", logmsg)
                 print(logmsg)
+        else:
+            if update_log:
+                now = now.strftime("%Y-%m-%d %H:%M:%S")
+                logmsg = now + " - SMS to " + str(user.username) + " was not sent due to modem error" + "\r\n"
+                r = write("log.txt", logmsg)
+                print(logmsg)
+
         return r
     except Exception as e:
         print("Error on sending SMS: ", e)
