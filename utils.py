@@ -267,7 +267,7 @@ def pre_test_notification(n, now):
     expiration_can_send = False
     last_sent = n["last_sent"]
     if last_sent != None:
-        n_lastsent = n["last_sent"]
+        pass
     else:
         n_lastsent = None
     n_notification = loads(n["notification"])
