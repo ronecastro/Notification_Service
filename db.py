@@ -85,6 +85,8 @@ class App_db:
     def delete(self, field, id):
         if field == "users":
             User.query.filter_by(id=id).delete()
+            # usr = db.session.query(User).filter_by(id=id).first()
+            # db.session.delete(usr)
             db.session.commit()
 
     def update(self, id=None, key=None, value=None):

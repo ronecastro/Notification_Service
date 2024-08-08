@@ -82,11 +82,11 @@ def connect_pvs(pvlist, timeout=2):
     pvs = [PV(pvname) for pvname in pvlist]
     for pv in pvs:
         if pv.connected:
-            sleep(0.015)
+            sleep(0.001)
         else:
             pv.wait_for_connection(timeout=timeout)
             if pv.connected:
-                sleep(0.015)
+                sleep(0.001)
     return pvs
 
 
@@ -222,7 +222,7 @@ def sms_formatter(sms_text, ndata=None):
                     msg += "Subrule: " + subrule + "\r\n"
             return msg
         else:
-            msg += "More than 3 PVs reached their limits!\r\n"
+            msg += "3 or more PVs reached their limits!\r\n"
             for key in ndata["pvs"]:
                 pvname = ndata["pvs"][key][0]["pv"]
                 pvvalue = ndata["pvs"][key][0]["value"]
@@ -266,6 +266,7 @@ def pre_test_notification(n, now):
     persistence_can_send = False
     expiration_can_send = False
     last_sent = n["last_sent"]
+    n_lastsent = last_sent
     if last_sent != None:
         pass
     else:
@@ -359,6 +360,9 @@ def prepare_evaluate(f, test_mode=False):
             print("Error on prepare_evaluate function: ", e)
             exit()
     return fullpvlist, modem
+
+def create_process(name, args):
+    pass
 
 
 # test_result = "{'send_sms': True, 'faulty': [], 'TS-04:PU-InjSeptG-1:Voltage-Mon(0)': ['TS-04:PU-InjSeptG-1:Voltage-Mon(407.7669430097902)'], 'subrule0': 'OR', 'TS-04:PU-InjSeptG-2:Voltage-Mon(1)': ['TS-04:PU-InjSeptG-2:Voltage-Mon(405.91594983988387)']}"

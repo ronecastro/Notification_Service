@@ -19,9 +19,13 @@ def evaluate():
             # load notification db
             app_notifications = App_db("notifications")
             # create pv list with all pvs used in db
+            # print("before makepvlist", dt.now())
             allpvs = makepvlist(fullpvlist, app_notifications)
+            # print('after makepvlist', dt.now())
             # create list of PV objects
+            # print('before connect_pvs', dt.now())
             pvlist = connect_pvs(allpvs)
+            # print('after connect_pvs', dt.now())
             # create dictionary from pv list
             pvlist_dict = {pv.pvname : pv for pv in pvlist}
             # get notifications from db
@@ -33,12 +37,16 @@ def evaluate():
             # for each notification
             for n in notifications_raw:
                 #test condition outside notification rules
-                can_send = pre_test_notification(n, now)
+                # print("before pre_test_notification", dt.now())
+                can_send = pre_test_notification(n, dt.now())
+                # print("after pre_test_notification", dt.now())
                 if can_send:
                     print(now, " - ", can_send)
                     # test conditions inside notification rules
+                    # print("before post_test_notification", now)
                     ans = post_test_notification(n, pvlist_dict, fullpvlist)
-                    print(ans)
+                    # print("before post_test_notification", now)
+                    # print(ans)
                     if ans["send_sms"]:
                         # send SMS to phone number and write to log.txt
                         users_db = App_db("users")
@@ -47,16 +55,19 @@ def evaluate():
                         no_text = False # force SMS text to none
                         send = False # send SMS through modem
                         r = byebye(ans, n, now, app_notifications, users_db, modem, update_db=update_db, update_log=update_log, no_text=no_text, send=send)
-        except KeyboardInterrupt:
-            break
-        # print 'running' symbol each iteration
-        loop_index = show_running(loop_index) # printing running sign
-        sleep(0.15)
 
-        me = ps_proc(os.getpid())
-        if me.parent() is not None:
-            continue
-        else:
+            # print 'running' symbol each iteration
+            loop_index = show_running(loop_index) # printing running sign
+            sleep(0.15)
+
+            me = ps_proc(os.getpid())
+            parent = me.parent()
+            if parent is not None:
+                continue
+            else:
+                break
+
+        except KeyboardInterrupt:
             break
 
 
