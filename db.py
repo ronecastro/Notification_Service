@@ -30,17 +30,22 @@ class App_db:
                 if field == "id":
                     result = db.session.query(User).filter_by(id=value).first()
                     #result = User.query.filter_by(id=value).first()
+                    db.session.close()
                 if field == "username":
                     result = db.session.query(User).filter_by(username=value).first()
+                    db.session.close()
                     #result = User.query.filter_by(username=value).all()
                 if field == "email":
                     result = db.session.query(User).filter_by(email=value).first()
+                    db.session.close()
                     #result = User.query.filter_by(email=value).all()
                 if field == "phone":
                     result = db.session.query(User).filter_by(phone=value).first()
+                    db.session.close()
                     #result = User.query.filter_by(phone=value).first()
                 if field == 'all':
                     result = db.session.query(User).all()
+                    db.session.close()
                     #result = User.query.all()
             except Exception as e:
                 result = e
@@ -49,12 +54,15 @@ class App_db:
             try:
                 if field == "id":
                     result = db.session.query(Notification).filter_by(id=value).first()
+                    db.session.close()
                     #result = Notification.query.filter_by(id=value).first()
                 if field == "user_id":
                     result = db.session.query(Notification).filter_by(user_id=value).first()
+                    db.session.close()
                     #result = Notification.query.filter_by(user_id=value).all()
                 if field == "all":
                     result = db.session.query(Notification).all()
+                    db.session.close()
                     #result = Notification.query.all()
             except Exception as e:
                 result = e
@@ -63,9 +71,11 @@ class App_db:
             try:
                 if field == "all":
                     result = db.session.query(Rule).all()
+                    db.session.close()
                     #result = Rule.query.all()
                 if rule_id != None:
                     result = db.session.query(Rule).filter_by(id=value).first()
+                    db.session.close()
                     #result = Rule.query.filter_by(id=rule_id).first()
             except Exception as e:
                 result = e

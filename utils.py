@@ -207,19 +207,21 @@ def sms_formatter(sms_text, ndata=None):
         # print(ndata)
         if ndata["sizetrue"] <= 2:
             for key in ndata["pvs"]:
-                pvname = ndata["pvs"][key][0]["pv"]
-                pvvalue = ndata["pvs"][key][0]["value"]
-                rule = ndata["pvs"][key][0]["rule"]
-                subrule = ndata["pvs"][key][0]["subrule"]
-                msg += pvname + " = " + str(pvvalue) + "\r\n"
-                msg +="Rule: " + rule + "\r\n"
-                if ndata["pvs"][key][0]["limit"]:
-                    msg += "Limit: " + str(ndata["pvs"][key][0]["limit"]) + "\r\n"
-                else:
-                    msg += "LL: " + str(ndata["pvs"][key][0]["limitLL"]) + "\r\n"
-                    msg += "LU: " + str(ndata["pvs"][key][0]["limitLL"]) + "\r\n"
-                if subrule:
-                    msg += "Subrule: " + subrule + "\r\n"
+                aux = ndata["pvs"][key]
+                if aux:
+                    pvname = ndata["pvs"][key][0]["pv"]
+                    pvvalue = ndata["pvs"][key][0]["value"]
+                    rule = ndata["pvs"][key][0]["rule"]
+                    subrule = ndata["pvs"][key][0]["subrule"]
+                    msg += pvname + " = " + str(pvvalue) + "\r\n"
+                    msg +="Rule: " + rule + "\r\n"
+                    if ndata["pvs"][key][0]["limit"]:
+                        msg += "Limit: " + str(ndata["pvs"][key][0]["limit"]) + "\r\n"
+                    else:
+                        msg += "LL: " + str(ndata["pvs"][key][0]["limitLL"]) + "\r\n"
+                        msg += "LU: " + str(ndata["pvs"][key][0]["limitLL"]) + "\r\n"
+                    if subrule:
+                        msg += "Subrule: " + subrule + "\r\n"
             return msg
         else:
             msg += "3 or more PVs reached their limits!\r\n"
