@@ -14,10 +14,10 @@ def evaluate():
     fullpvlist, modem = prepare_evaluate(f, test_mode=False)
     loop_index = 0
     print("Running!")
+    # load notification db
+    app_notifications = App_db("notifications")
     while True:
         try:
-            # load notification db
-            app_notifications = App_db("notifications")
             # create pv list with all pvs used in db
             # print("before makepvlist", dt.now())
             allpvs = makepvlist(fullpvlist, app_notifications)
@@ -41,7 +41,6 @@ def evaluate():
                 can_send = pre_test_notification(n, dt.now())
                 # print("after pre_test_notification", dt.now())
                 if can_send:
-                    print(now, " - ", can_send)
                     # test conditions inside notification rules
                     # print("before post_test_notification", now)
                     ans = post_test_notification(n, pvlist_dict, fullpvlist)
@@ -54,7 +53,7 @@ def evaluate():
                         update_log = True # write to log.txt
                         no_text = False # force SMS text to none
                         send = False # send SMS through modem
-                        r = byebye(ans, n, now, app_notifications, users_db, modem, update_db=update_db, update_log=update_log, no_text=no_text, send=send)
+                        r = byebye(ans, n, now, app_notifications, users_db, modem, update_db=update_db, update_log=update_log, no_text=no_text, send=send, print_msg=False)
 
             # print 'running' symbol each iteration
             loop_index = show_running(loop_index) # printing running sign

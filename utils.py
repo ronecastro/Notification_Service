@@ -302,7 +302,7 @@ def pre_test_notification(n, now):
         can_send = True
     return can_send
 
-def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, update_log=True, no_text=False, send=True):
+def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, update_log=True, no_text=False, send=True, print_msg=True):
     r = 0
     try:
         user_id = n["user_id"]
