@@ -230,7 +230,7 @@ def sms_formatter(sms_text, ndata=None):
                         msg += "Subrule: " + subrule + "\r\n"
             return msg
         else:
-            msg += "3 or more PVs reached their limits!\r\n"
+            msg += "Multiple PVs reached their limits!\r\n"
             for key in ndata["pvs"]:
                 pvname = ndata["pvs"][key][0]["pv"]
                 pvvalue = ndata["pvs"][key][0]["value"]
