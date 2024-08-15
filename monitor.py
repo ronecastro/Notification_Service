@@ -45,7 +45,7 @@ def evaluate():
                         update_log = True # write to log.txt
                         no_text = False # force SMS text to none
                         send = False # send SMS through modem
-                        r = byebye(ans, n, now, app_notifications, users_db, modem, update_db=update_db, update_log=update_log, no_text=no_text, send=send, print_msg=False, queue=queue)
+                        r = byebye(ans, n, now, app_notifications, users_db, modem, update_db=update_db, update_log=update_log, no_text=no_text, send=send, print_msg=False)
 
             # print 'running' symbol each iteration
             show_running(loop_index) # printing running sign
