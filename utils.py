@@ -78,16 +78,19 @@ def makepvpool(fullpvlist, app_notifications):
     return pvpool
 
 
-def connect_pvs(pvlist, timeout=2):
-    pvs = [PV(pvname) for pvname in pvlist]
-    for pv in pvs:
-        if pv.connected:
-            sleep(0.001)
-        else:
-            pv.wait_for_connection(timeout=timeout)
-            if pv.connected:
-                sleep(0.001)
-    return pvs
+def connect_pvs(allpvs, pvs_dict):
+    # build up pv dictionary
+    for pvname in allpvs:
+        # if pv not in dictionary
+        if pvname not in pvs_dict:
+            # add to dictionary
+            pvs_dict[pvname] = PV(pvname)
+    # clean up unused PV objects
+    for key in pvs_dict:
+        # if dictionary key name not in list
+        if key not in allpvs:
+            # delete dictionary key
+            del pvs_dict[key]
 
 
 def get_enum_list(pv):
@@ -120,8 +123,10 @@ def get_enum_list(pv):
     else:
         return None
 
-def post_test_notification(n, pvlist_dict, fullpvlist):
+
+def post_test_notification(n, pvs_dict):
     """test if notification rules evaluates to true."""
+    fullpvlist = list(pvs_dict.keys())
     notification = n[symbols.notification]
     notification_json = json.loads(notification)
     nc = notification_json[symbols.notificationCores]
@@ -151,8 +156,8 @@ def post_test_notification(n, pvlist_dict, fullpvlist):
             i = 0
             for pvname in pvnames:
                 try:
-                    if pvlist_dict[pvname].connected:
-                        pv = pvlist_dict[pvname].value
+                    if pvs_dict[pvname].connected:
+                        pv = pvs_dict[pvname].value
                         try:
                             float(str(pv))
                         except:
@@ -198,6 +203,7 @@ def post_test_notification(n, pvlist_dict, fullpvlist):
 
     return test_results
 
+
 def sms_formatter(sms_text, ndata=None):
     """format SMS message text to sent to modem."""
     if sms_text:
@@ -235,30 +241,12 @@ def sms_formatter(sms_text, ndata=None):
             msg += "Rule: " + rule + "\r\n"
             return msg
 
+
 def show_running(loop_index):
     """show running status on prompt."""
-    if loop_index == 0:
-        print("|", end='\r')
-    if loop_index == 1:
-        print("/", end='\r')
-    if loop_index == 2:
-        print("-", end='\r')
-    if loop_index == 3:
-        print("\\", end='\r')
-    if loop_index == 4:
-        print("|", end='\r')
-    if loop_index == 5:
-        print("/", end='\r')
-    if loop_index == 6:
-        print("-", end='\r')
-    if loop_index == 7:
-        print("\\", end='\r')
-
-    loop_index += 1
-    if loop_index >= 8:
-        loop_index = 0
-
-    return loop_index
+    run = ["|", "/", "-", "\\", "|", "/", "-", "\\"]
+    idx = loop_index % 8
+    print(run[idx], end='\r')
 
 
 def pre_test_notification(n, now):
@@ -301,6 +289,7 @@ def pre_test_notification(n, now):
         expiration_can_send == True:
         can_send = True
     return can_send
+
 
 def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, update_log=True, no_text=False, send=True, print_msg=True):
     r = 0
