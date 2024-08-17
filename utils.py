@@ -292,7 +292,7 @@ def pre_test_notification(n, now):
     return can_send
 
 
-def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, update_log=True, no_text=False, send=True, print_msg=True, queue=None):
+def byebye(ans, n, now, app_notifications, users_db, update_db=True, update_log=True, no_text=False, send=True, print_msg=True, queue=None):
     try:
         user_id = n["user_id"]
         user = users_db.get(field="id", value=user_id)
@@ -306,15 +306,16 @@ def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, upda
         text2send = sms_formatter(sms_text, ndata=ans)
         # set cellphone number
         number = user.phone
+        username = user.username
 
         # update notification last_sent key
         if update_db:
             n_id = n["id"]
-            update_ans = app_notifications.update(n_id, "last_sent", now)
+            update_db_ans = app_notifications.update(n_id, "last_sent", now)
             # update log.txt
 
         # create variable to store data passed to new process
-        basket = [modem, number, text2send, update_ans, update_log, user, send, now, print_msg]
+        basket = [number, text2send, update_db_ans, update_log, username, send, now, print_msg]
         # append data to queue
         queue.append(basket)
     except Exception as e:
@@ -340,32 +341,37 @@ def prepare_evaluate(f, test_mode=False):
             print("Modem object created")
             modem.initialize()
             print("USB Modem initialized")
+            modem.closeconnection()
         except Exception as e:
             print("Error on prepare_evaluate function: ", e)
             exit()
     return fullpvlist, modem
 
 
-def call_modem(modem, number, text2send, update_ans, update_log, user, send, now, print_msg, busy):
+def call_modem(number, text2send, update_db_ans, update_log, username, send, now, print_msg, busy):
     # initially, busy variable is True, because modem will be in use
     if send:
-        modem_ans = modem.sendsms_force(number=number, msg=text2send)
-        now = dt.now()
+        modem = Modem()
+        modem_ans = modem.sendsms(number=number, msg=text2send, force=True)
+        modem.closeconnection()
+        m_now = dt.now()
     else:
         modem_ans = 1
-        now = dt.now()
-    # if modem answer if ok, proceed to write log
+        m_now = dt.now()
+    # if modem answer ok, proceed to write log
     if modem_ans:
-        if update_ans and update_log:
+        if update_db_ans and update_log:
             now = now.strftime("%Y-%m-%d %H:%M:%S")
-            logmsg = now + " - SMS to " + str(user.username) + " with message: \r\n" + text2send + "\r\n"
+            m_now = m_now.strftime("%Y-%m-%d %H:%M:%S")
+            logmsg = now + " - SMS to " + str(username) + " at " + m_now + " with message: \r\n" + text2send + "\r\n"
             w_log = write("log.txt", logmsg)
             if print_msg:
                 print(logmsg)
     else:
         if update_log:
             now = now.strftime("%Y-%m-%d %H:%M:%S")
-            logmsg = now + " - SMS to " + str(user.username) + " was not sent due to modem error" + "\r\n"
+            m_now = now.strftime("%Y-%m-%d %H:%M:%S")
+            logmsg = now + " - SMS to " + str(username) + " was not sent due to modem error, at " + m_now + "\r\n"
             w_log = write("log.txt", logmsg)
             if print_msg:
                 print(logmsg)
@@ -379,21 +385,20 @@ def call_modem(modem, number, text2send, update_ans, update_log, user, send, now
 def sms_queuer(queue, busy, exit):
     while True:
         if len(queue) > 0 and not busy.value:
-            aux = process_status("ns_call_modem")
-            if not aux:
+            call_modem_open = process_status("ns_call_modem")
+            if not call_modem_open:
                 basket = deepcopy(queue[0])
                 queue.pop(0)
-                modem = basket[0]
-                number = basket[1]
-                text2send = basket[2]
-                update_ans = basket[3]
-                update_log = basket[4]
-                user = basket[5]
-                send = basket[6]
-                now = basket[7]
-                print_msg = basket[8]
+                number = basket[0]
+                text2send = basket[1]
+                update_db_ans = basket[2]
+                update_log = basket[3]
+                user = basket[4]
+                send = basket[5]
+                now = basket[6]
+                print_msg = basket[7]
                 busy.value = True
-                proc = Process(target=call_modem, args=(modem, number, text2send, update_ans, update_log, user, send, now, print_msg, busy), name="ns_call_modem")
+                proc = Process(target=call_modem, args=(number, text2send, update_db_ans, update_log, user, send, now, print_msg, busy), name="ns_call_modem")
                 proc.start()
         sleep(1)
         if exit.value == True:

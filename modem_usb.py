@@ -289,7 +289,7 @@ class Modem:
         return ans
 
     #Operations Group number
-    def sendsms(self, mode='direct', number='+5519997397443', msg='SMS message test.', clearmemo=True):
+    def sendsms(self, mode='direct', number='+5519997397443', msg='SMS message test.', clearmemo=True, force=False):
         self.msg = deepcopy(msg[:160])
         self.msgnumber = number
         if mode == 'direct':
@@ -304,9 +304,16 @@ class Modem:
                 time.sleep(5)
                 ans = self.get_answer()
             if msg and 'OK' in ans:
-                return 1, dt.now()
-            else:
-                return 0, dt.now()
+                if force:
+                    if not self.get_delivery_report(phonenumber=number,
+                                                    sent=dt.now(),
+                                                    delay=10):
+                        if self.force_delivery():
+                            self.closeconnection()
+                            return 1, dt.now()
+                else:
+                    return 1, dt.now()
+            return 0, dt.now()
 
         elif mode == 'indirect':
             cmd = CMGW + '"' + number + '"' + CR
@@ -328,7 +335,17 @@ class Modem:
                             if ('OK' in ans) and ('nOK' not in ans):
                                 if clearmemo:
                                     self.clear_storage(msgnumber)
-                                return 1, dt.now()
+                                if force:
+                                    if not self.get_delivery_report(phonenumber=number,
+                                        sent=dt.now(),
+                                        delay=10):
+                                        if self.force_delivery():
+                                            self.closeconnection()
+                                            return 1, dt.now()
+                                else:
+                                    return 1, dt.now()
+                else:
+                    return 1, dt.now()
             return 0, dt.now()
 
     def closeconnection(self):

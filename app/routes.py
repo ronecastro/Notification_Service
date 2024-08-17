@@ -198,13 +198,17 @@ def notifications():
                 id = checked_list[0]
                 return redirect(url_for('notifications_edit', id=id))
         if action == 'delete':
-            checked_list = list(map(int, request.form.getlist('checkbox[]')))
-            if len(checked_list) > 0:
-                for item in checked_list:
-                    notification = db.session.query(Notification).filter_by(id=item).first()
-                    db.session.delete(notification)
-                    db.session.commit()
-                flash('Notification(s) deleted!', 'success')
+            if current_user.is_authenticated:
+                checked_list = list(map(int, request.form.getlist('checkbox[]')))
+                if len(checked_list) > 0:
+                    for item in checked_list:
+                        notification = db.session.query(Notification).filter_by(id=item).first()
+                        db.session.delete(notification)
+                        db.session.commit()
+                    flash('Notification(s) deleted!', 'success')
+                    return redirect(url_for('notifications'))
+            else:
+                flash('Login to delete a notification!', 'warning')
                 return redirect(url_for('notifications'))
     user = current_user
     #rule = Rule.query.filter_by(id=checked_list[0]).first()
