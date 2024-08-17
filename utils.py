@@ -352,7 +352,8 @@ def call_modem(number, text2send, update_db_ans, update_log, username, send, now
     # initially, busy variable is True, because modem will be in use
     if send:
         modem = Modem()
-        modem_ans = modem.sendsms(number=number, msg=text2send, force=True)
+        msg = deepcopy(text2send[:-2])
+        modem_ans = modem.sendsms(number=number, msg=msg, force=True)
         modem.closeconnection()
         m_now = dt.now()
     else:
