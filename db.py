@@ -106,8 +106,8 @@ class App_db:
                 #notification = Notification.query.filter_by(id=id).first()
                 if key == "notification":
                     notification.notification = value
-                # if key == sms_text:
-                #     notification.sms_text = value
+                if key == "sms_text":
+                    notification.sms_text = value
                 if key == "last_sent":
                     notification.last_sent = value
                 # db.session.query(Notification).filter_by(id=id).update({key: value})

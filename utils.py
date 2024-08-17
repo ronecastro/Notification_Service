@@ -11,7 +11,9 @@ from json import dumps, loads
 from db import App_db, FullPVList
 from iofunctions import current_path as cpath, write
 from modem_usb import Modem
-
+from multiprocessing import Process, Value
+from ctypes import c_bool
+from psutil import process_iter
 
 def row2dict(row):
     d = {}
@@ -291,8 +293,7 @@ def pre_test_notification(n, now):
     return can_send
 
 
-def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, update_log=True, no_text=False, send=True, print_msg=True):
-    r = 0
+def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, update_log=True, no_text=False, send=True, print_msg=True, queue=None):
     try:
         user_id = n["user_id"]
         user = users_db.get(field="id", value=user_id)
@@ -300,32 +301,13 @@ def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, upda
         if no_text:
             sms_text = ""
         text2send = sms_formatter(sms_text, ndata=ans)
-        if send:
-            r = modem.sendsms_force(number=user.phone, msg=text2send)
-        else:
-            r = 1
-        if r:
-            # update notification last_sent key
-            if update_db:
-                n_id = n["id"]
-                r = app_notifications.update(n_id, "last_sent", now)
-                # update log.txt
-            if r and update_log:
-                now = now.strftime("%Y-%m-%d %H:%M:%S")
-                logmsg = now + " - SMS to " + str(user.username) + " with message: \r\n" + text2send + "\r\n"
-                r = write("log.txt", logmsg)
-                print(logmsg)
-        else:
-            if update_log:
-                now = now.strftime("%Y-%m-%d %H:%M:%S")
-                logmsg = now + " - SMS to " + str(user.username) + " was not sent due to modem error" + "\r\n"
-                r = write("log.txt", logmsg)
-                print(logmsg)
-
-        return r
+        number = user.phone
+        # create variable to store data passed to new process
+        basket = [modem, number, text2send, update_db, update_log, n, app_notifications, user, send, now]
+        # append data to queue
+        queue.append(basket)
     except Exception as e:
         print("Error on sending SMS: ", e)
-        return r
 
 def prepare_evaluate(f, test_mode=False):
     if test_mode:
@@ -352,8 +334,61 @@ def prepare_evaluate(f, test_mode=False):
             exit()
     return fullpvlist, modem
 
-def create_process(name, args):
-    pass
+def call_modem(modem, number, text2send, busy, update_db, update_log, n, app_notifications, user, send, now):
+    if send:
+        r = modem.sendsms_force(number=number, msg=text2send)
+    else:
+        r = 1
+    if r:
+        # update notification last_sent key
+        if update_db:
+            n_id = n["id"]
+            r = app_notifications.update(n_id, "last_sent", now)
+            # update log.txt
+        if r and update_log:
+            now = now.strftime("%Y-%m-%d %H:%M:%S")
+            logmsg = now + " - SMS to " + str(user.username) + " with message: \r\n" + text2send + "\r\n"
+            r = write("log.txt", logmsg)
+            print(logmsg)
+    else:
+        if update_log:
+            now = now.strftime("%Y-%m-%d %H:%M:%S")
+            logmsg = now + " - SMS to " + str(user.username) + " was not sent due to modem error" + "\r\n"
+            r = write("log.txt", logmsg)
+            print(logmsg)
+
+    # set busy variable to False, freeing the modem
+    busy.value = False
+
+    return r
+
+
+def sms_queuer(queue, busy):
+    while True:
+        if len(queue) > 0 and not busy.value:
+            if not process_status("ns_call_modem"):
+                basket = queue[0]
+                modem = basket[0]
+                number = basket[1]
+                text2send = basket[2]
+                update_db = basket[3]
+                update_log = basket[4]
+                n = basket[5]
+                app_notifications = basket[6]
+                user = basket[7]
+                send = basket[8]
+                now = basket[9]
+                busy.value = True
+                proc = Process(target=call_modem, args=(modem, number, text2send, busy, update_db, update_log, n, app_notifications, user, send, now), name="ns_call_modem")
+                proc.start()
+        sleep(10)
+
+
+def process_status(process_name):
+    for process in process_iter(['pid', 'name']):
+        if process.info['name'] == process_name:
+            return True
+    return False
 
 
 # test_result = "{'send_sms': True, 'faulty': [], 'TS-04:PU-InjSeptG-1:Voltage-Mon(0)': ['TS-04:PU-InjSeptG-1:Voltage-Mon(407.7669430097902)'], 'subrule0': 'OR', 'TS-04:PU-InjSeptG-2:Voltage-Mon(1)': ['TS-04:PU-InjSeptG-2:Voltage-Mon(405.91594983988387)']}"

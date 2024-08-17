@@ -1,5 +1,5 @@
 #!./venv/bin/python
-from utils import makepvlist, connect_pvs, post_test_notification, pre_test_notification, show_running, byebye, prepare_evaluate
+from utils import makepvlist, connect_pvs, post_test_notification, pre_test_notification, show_running, byebye, prepare_evaluate, sms_queuer
 from epics import PV
 from time import sleep
 from symbols import *
@@ -7,7 +7,8 @@ from datetime import datetime as dt
 from db import * #App_db, FullPVList
 import os
 from psutil import Process as ps_proc
-from multiprocessing import Queue
+from multiprocessing import Process, Value, Manager
+from ctypes import c_bool
 
 def evaluate():
     # make full PV list and create modem object
@@ -18,7 +19,10 @@ def evaluate():
     # load notification db
     app_notifications = App_db("notifications")
     pvs_dict = dict()
-    queue = Queue()
+    queue = Manager().list()
+    busy =  Value(c_bool, False)
+    p = Process(target=sms_queuer, args=(queue, busy,))
+    p.start()
     while True:
         try:
             # create pv list with all pvs used in db
@@ -45,21 +49,13 @@ def evaluate():
                         update_log = True # write to log.txt
                         no_text = False # force SMS text to none
                         send = False # send SMS through modem
-                        r = byebye(ans, n, now, app_notifications, users_db, modem, update_db=update_db, update_log=update_log, no_text=no_text, send=send, print_msg=False)
-
+                        byebye(ans, n, now, app_notifications, users_db, modem, update_db=update_db, update_log=update_log, no_text=no_text, send=send, print_msg=False, queue=queue)
             # print 'running' symbol each iteration
             show_running(loop_index) # printing running sign
             loop_index += 1
 
             sleep(0.15)
 
-            me = ps_proc(os.getpid())
-            parent = me.parent()
-
-            if parent is not None:
-                continue
-            else:
-                break
         except KeyboardInterrupt:
             break
 
