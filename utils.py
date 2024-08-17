@@ -14,6 +14,7 @@ from modem_usb import Modem
 from multiprocessing import Process, Value
 from ctypes import c_bool
 from psutil import process_iter
+from datetime import datetime as dt
 
 def row2dict(row):
     d = {}
@@ -182,7 +183,7 @@ def post_test_notification(n, pvs_dict):
                     else:
                         faulty.append(pvname)
                 except Exception as e:
-                    print("Error on test: ", e)
+                    print("Error on PV test: ", e)
                     faulty.append(pvname)
                     rule_array.append(str(False))
 
@@ -201,7 +202,7 @@ def post_test_notification(n, pvs_dict):
 
         test_results.update({"faulty" : faulty})
     except Exception as e:
-        print('Error on PV test: ', e)
+        print("Error on utils.py, post_test_notification function: ", e)
 
     return test_results
 
@@ -259,13 +260,11 @@ def pre_test_notification(n, now):
     expiration_can_send = False
     last_sent = n["last_sent"]
     n_lastsent = last_sent
-    if last_sent != None:
-        pass
-    else:
-        n_lastsent = None
+    # if n_lastsent != None:
+    #     pass
+    # else:
+    #     n_lastsent = None
     n_notification = loads(n["notification"])
-    n_id = n["id"]
-    n_created = datetime.strptime(n_notification["created"], '%Y-%m-%d %H:%M')
     n_interval = timedelta(minutes=int(n_notification["interval"]))
     n_persistence = n_notification["persistence"]
     n_expiration = datetime.strptime(n_notification["expiration"], '%Y-%m-%d %H:%M')
@@ -297,17 +296,29 @@ def byebye(ans, n, now, app_notifications, users_db, modem, update_db=True, upda
     try:
         user_id = n["user_id"]
         user = users_db.get(field="id", value=user_id)
+        # get sms text from notification
         sms_text = n["sms_text"]
+        # if no text option enabled
         if no_text:
+            # set sms text to empty
             sms_text = ""
+        # format sms text
         text2send = sms_formatter(sms_text, ndata=ans)
+        # set cellphone number
         number = user.phone
+
+        # update notification last_sent key
+        if update_db:
+            n_id = n["id"]
+            update_ans = app_notifications.update(n_id, "last_sent", now)
+            # update log.txt
+
         # create variable to store data passed to new process
-        basket = [modem, number, text2send, update_db, update_log, n, app_notifications, user, send, now]
+        basket = [modem, number, text2send, update_ans, update_log, user, send, now, print_msg]
         # append data to queue
         queue.append(basket)
     except Exception as e:
-        print("Error on sending SMS: ", e)
+        print("Error on utils.py, byebye function: ", e)
 
 def prepare_evaluate(f, test_mode=False):
     if test_mode:
@@ -334,54 +345,59 @@ def prepare_evaluate(f, test_mode=False):
             exit()
     return fullpvlist, modem
 
-def call_modem(modem, number, text2send, busy, update_db, update_log, n, app_notifications, user, send, now):
+
+def call_modem(modem, number, text2send, update_ans, update_log, user, send, now, print_msg, busy):
+    # initially, busy variable is True, because modem will be in use
     if send:
-        r = modem.sendsms_force(number=number, msg=text2send)
+        modem_ans = modem.sendsms_force(number=number, msg=text2send)
+        now = dt.now()
     else:
-        r = 1
-    if r:
-        # update notification last_sent key
-        if update_db:
-            n_id = n["id"]
-            r = app_notifications.update(n_id, "last_sent", now)
-            # update log.txt
-        if r and update_log:
+        modem_ans = 1
+        now = dt.now()
+    # if modem answer if ok, proceed to write log
+    if modem_ans:
+        if update_ans and update_log:
             now = now.strftime("%Y-%m-%d %H:%M:%S")
             logmsg = now + " - SMS to " + str(user.username) + " with message: \r\n" + text2send + "\r\n"
-            r = write("log.txt", logmsg)
-            print(logmsg)
+            w_log = write("log.txt", logmsg)
+            if print_msg:
+                print(logmsg)
     else:
         if update_log:
             now = now.strftime("%Y-%m-%d %H:%M:%S")
             logmsg = now + " - SMS to " + str(user.username) + " was not sent due to modem error" + "\r\n"
-            r = write("log.txt", logmsg)
-            print(logmsg)
+            w_log = write("log.txt", logmsg)
+            if print_msg:
+                print(logmsg)
 
-    # set busy variable to False, freeing the modem
+    # set busy variable to False, freeing the modem for next use
+    sleep(1)
     busy.value = False
+    return w_log
 
-    return r
 
-
-def sms_queuer(queue, busy):
+def sms_queuer(queue, busy, exit):
     while True:
         if len(queue) > 0 and not busy.value:
-            if not process_status("ns_call_modem"):
-                basket = queue[0]
+            aux = process_status("ns_call_modem")
+            if not aux:
+                basket = deepcopy(queue[0])
+                queue.pop(0)
                 modem = basket[0]
                 number = basket[1]
                 text2send = basket[2]
-                update_db = basket[3]
+                update_ans = basket[3]
                 update_log = basket[4]
-                n = basket[5]
-                app_notifications = basket[6]
-                user = basket[7]
-                send = basket[8]
-                now = basket[9]
+                user = basket[5]
+                send = basket[6]
+                now = basket[7]
+                print_msg = basket[8]
                 busy.value = True
-                proc = Process(target=call_modem, args=(modem, number, text2send, busy, update_db, update_log, n, app_notifications, user, send, now), name="ns_call_modem")
+                proc = Process(target=call_modem, args=(modem, number, text2send, update_ans, update_log, user, send, now, print_msg, busy), name="ns_call_modem")
                 proc.start()
-        sleep(10)
+        sleep(1)
+        if exit.value == True:
+            exit()
 
 
 def process_status(process_name):

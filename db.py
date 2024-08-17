@@ -21,6 +21,7 @@ class App_db:
         return connection
 
     def get(self, field='all', value=None, rule_id=None, user_id=None, notification_id=None):
+        result = 0
         databases = ["users", "notifications", "rules"]
         database = self.database
         if database not in databases:
@@ -53,11 +54,11 @@ class App_db:
         if database == "notifications":
             try:
                 if field == "id":
-                    result = db.session.query(Notification).filter_by(id=value).first()
+                    result = db.session.query(Notification).filter_by(id=notification_id).first()
                     db.session.close()
                     #result = Notification.query.filter_by(id=value).first()
                 if field == "user_id":
-                    result = db.session.query(Notification).filter_by(user_id=value).first()
+                    result = db.session.query(Notification).filter_by(user_id=user_id).first()
                     db.session.close()
                     #result = Notification.query.filter_by(user_id=value).all()
                 if field == "all":
@@ -65,6 +66,7 @@ class App_db:
                     db.session.close()
                     #result = Notification.query.all()
             except Exception as e:
+                print("Error on db.py, get function: ", e)
                 result = e
 
         if database == "rules":
@@ -100,6 +102,7 @@ class App_db:
             db.session.commit()
 
     def update(self, id=None, key=None, value=None):
+        ans = 0
         try:
             if self.database == "notifications":
                 notification = db.session.query(Notification).filter_by(id=id).first()
@@ -129,7 +132,9 @@ class App_db:
                 db.session.commit()
             ans = 1
         except Exception as e:
-            return e
+            print("Error on db.py, update function: ", e)
+            ans = 0
+            return ans
         return ans
 
 class FullPVList:
